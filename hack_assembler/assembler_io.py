@@ -35,9 +35,6 @@ class TextIO:
         self.count = 0
 
 if __name__ == '__main__':
-
-    
-
     test_io = TextIO('/home/vensin/hack_assembler/test_material/test_io.txt',
                      '/home/vensin/hack_assembler/test_material/test_io_result.txt')
     new_line = test_io.get_line()

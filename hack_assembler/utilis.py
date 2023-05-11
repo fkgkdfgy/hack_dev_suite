@@ -1,0 +1,4 @@
+
+class AssemblerException(Exception):
+    pass
+

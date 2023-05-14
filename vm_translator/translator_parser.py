@@ -22,10 +22,13 @@ def RemoveWhiteSpace(sentense):
     return result
 
 valid_char = ['_','.','$','-']
+invalid_char = [' ','\t','\n','\r']
 
 def IsValidChar(char):
     return str(char).isalpha() or char in valid_char or str(char).isdigit()
 
+def IsInValidChar(char):
+    return char in invalid_char
 
 def SegmentInstruction(sentense):
     
@@ -39,13 +42,14 @@ def SegmentInstruction(sentense):
                     index = i
                 else:
                     break
+            result.append(sentense[0:index+1]) 
         elif sentense[0].isdigit():
             for i in range(len(sentense)):
                 if sentense[i].isdigit():
                     index = i  
                 else:
-                    break          
-        result.append(sentense[0:index+1])
+                    break           
+            result.append(sentense[0:index+1]) 
         inner_segment(sentense[index+1:],result)            
     
     result = []
@@ -62,7 +66,7 @@ class Parser:
         sentense = RemoveComment(sentense)
         if not sentense:
             return []
-        sentense = RemoveWhiteSpace(sentense)
+        # sentense = RemoveWhiteSpace(sentense)
         if not sentense:
             return []
         return SegmentInstruction(sentense)

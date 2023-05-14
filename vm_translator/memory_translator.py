@@ -4,6 +4,15 @@ from utilis import VMTranslatorException
 def is_memory_instruction(segments):
     return 'pop' == segments[0] or 'push' == segments[0]
 
+def add_comment(comment):
+    def inner_add_comment(func):
+        def inner_function(*args,**kwargs):
+            result = comment
+            result += func(*args,**kwargs)
+            return result
+        return inner_function
+    return inner_add_comment
+
 # 目前仅用于检查offset 是否是正数，之后可能会用于添加BuiltInFunction
 def basic_check(f):
     def inner_function(obj,input):
@@ -13,6 +22,7 @@ def basic_check(f):
     return inner_function
 
 # 新的地址保存在D中
+@add_comment(comment='// get base_addr + offset into D registor')
 def get_label_addr(builtin_label,offset):
     int_offset = int(offset)
     description = '''
@@ -24,14 +34,9 @@ def get_label_addr(builtin_label,offset):
     '''.format(builtin_label,str(abs(int_offset)),'+' if int_offset>0 else '-')
     return description
 
-def get_value_of_reg():
-    description='''
-    A=D
-    D=M
-    '''
-    return description
 
 # 默认需要保存的数据存储在D中
+@add_comment(comment='// push data in D reg into stack')
 def push_stack():
     description='''
     @SP
@@ -44,6 +49,7 @@ def push_stack():
     return description
 
 # 默认pop 的目标地址保存在 D 寄存器
+@add_comment(comment='// pop data in stack into D reg')
 def pop_stack():
     description='''
     @R13
@@ -62,22 +68,26 @@ def pop_stack():
     '''
     return description
 
+@add_comment(comment='// save the data of addr stored in D registor into D')
 def get_value():
     description='''
     A=D
     D=M
     '''
+    return description
 
+@add_comment(comment='// move data stored in Reg into D reg')
 def move_reg_to_D(reg):
     description='''
-    @{reg}
+    @{0}
     D=M
     '''.format(reg)
     return description
 
+@add_comment(comment='// move data stored in D into other Reg')
 def move_D_to_reg(reg):
     description='''
-    @{reg}
+    @{0}
     M=D
     '''.format(reg)
     return description
@@ -85,7 +95,7 @@ def move_D_to_reg(reg):
 def basic_code_template_for_push(base_addr,offset):
     description = ''
     description += get_label_addr(base_addr,offset)
-    description += get_value_of_reg()
+    description += get_value()
     description += push_stack()
     return description
 
@@ -131,7 +141,7 @@ AlgInsBuiltInKeyWords=['add','sub','neg','eq','gt','lt','and','or','not']
 BranchInsBuiltInKeyWords=['label','goto','if-goto']
 FunctionInsBuiltInKeyWords = ['function','call','return']
 
-function_call = 0
+function_count = 0
 
 class Translator:
 
@@ -179,11 +189,13 @@ class Translator:
 
         if self.function_in_process:
             result = self.function_in_process.process(segments)
+            if result:
+                self.function_in_process = None
             return result
         if segments[0] in MemoryInsBuiltInKeyWords:
             if segments[1] in MemorySegmentsBuiltInKeyWords:
                 message_label=segments[0]+'_'+segments[1]
-                return self.memory_ins[message_label](segments[3])
+                return self.memory_ins[message_label](segments[2])
             raise VMTranslatorException('Unkown instruction label{0} is not find in MemorySegmentsBuiltInKeyWords'.format(segments[1]))
         if segments[0] in AlgInsBuiltInKeyWords:
             message_label = segments[0]
@@ -192,9 +204,12 @@ class Translator:
             message_label = segments[0]
             return self.branch_ins[message_label]
         if segments[0] == 'function':
-            self.function_in_process = FunctionTranslator(self.frame_name+'.'+segments[1],segments[2])
-            self.functions[self.frame_name+'.'+segments[1]] = self.function_in_process
-            return None
+            return self.function_function(segments[1],segments[2])
+        if segments[0] == 'call':
+            return self.function_call(segments[1],segments[2])
+        if segments[0] == 'return':
+            raise VMTranslatorException('find a return when the function_in_process is None')
+            
         raise VMTranslatorException('Unkown instruction label{0}'.format(segments))
     
     @basic_check
@@ -281,42 +296,42 @@ class Translator:
 
     def alg_eq(self):
         alg = '''
-              @{1}_EQTrue_{0}
-              D=D-M;JEQ
-              @{1}_EQTrueEnd_{0}
-              D=0
-              0;JMP
-              ({1}_EQTrue_{0})
-              D=-1
-              ({1}_EQTrueEnd_{0})
+        @{1}_EQTrue_{0}
+        D=D-M;JEQ
+        @{1}_EQTrueEnd_{0}
+        D=0
+        0;JMP
+        ({1}_EQTrue_{0})
+        D=-1
+        ({1}_EQTrueEnd_{0})
         '''.format(self.eq_count,self.frame_name.upper())
         self.eq_count +=1
         return basic_code_template_alg_with_2arg(alg)
 
     def alg_gt(self):
         alg = '''
-              @{1}_GTTrue_{0}
-              D=D-M;JGT
-              @{1}_GTTrueEnd_{0}
-              D=0
-              0;JMP
-              ({1}_GTTrue_{0})
-              D=-1
-              ({1}_GTTrueEnd_{0})
+        @{1}_GTTrue_{0}
+        D=D-M;JGT
+        @{1}_GTTrueEnd_{0}
+        D=0
+        0;JMP
+        ({1}_GTTrue_{0})
+        D=-1
+        ({1}_GTTrueEnd_{0})
         '''.format(self.gt_count,self.frame_name.upper())
         self.gt_count +=1
         return basic_code_template_alg_with_2arg(alg)
 
     def alg_lt(self):
         alg = '''
-              @{1}_LTTrue_{0}
-              D=D-M;JLT
-              @{1}_LTTrueEnd_{0}
-              D=0
-              0;JMP
-              ({1}_LTTrue_{0})
-              D=-1
-              ({1}_LTTrueEnd_{0})
+        @{1}_LTTrue_{0}
+        D=D-M;JLT
+        @{1}_LTTrueEnd_{0}
+        D=0
+        0;JMP
+        ({1}_LTTrue_{0})
+        D=-1
+        ({1}_LTTrueEnd_{0})
         '''.format(self.lt_count,self.frame_name.upper())
         self.lt_count +=1
         return basic_code_template_alg_with_2arg(alg)
@@ -331,7 +346,9 @@ class Translator:
         return basic_code_template_alg_with_2arg('D=!M')
     
     def branch_label(self,label):
-        return '({0})'.format(self.frame_name+'$'+label)  
+        return '''
+        ({0})
+        '''.format(self.frame_name+'$'+label)  
 
     def branch_goto(self,label):
         description = '''
@@ -350,8 +367,9 @@ class Translator:
         return description
     
     def function_call(self,label,args_num):
-        
-        label = '{0}$ret.{1}'.format(self.frame_name,function_call)
+
+        global function_count
+        label = '{0}$ret.{1}'.format(self.frame_name,function_count)
         
         description =''
         description += get_label_addr(label,0)
@@ -364,20 +382,25 @@ class Translator:
         description += push_stack()
         description += get_label_addr('THAT',0)
         description += push_stack()
-        description += get_label_addr('SP',-5-args_num)
+        description += get_label_addr('SP',-5-int(args_num))
         description += move_D_to_reg('ARG')
         description += get_label_addr('SP',0)
         description += move_D_to_reg('LCL')
-        description += self.branch_label('$ret.{}'.format(function_call))
+        description += self.branch_label('ret.{0}'.format(function_count))
 
-        function_call+=1
+        function_count+=1
         return description
+
+    def function_function(self,label,nvars):
+        self.function_in_process = FunctionTranslator(self.frame_name+'.'+label,nvars)
+        self.functions[self.frame_name+'.'+label] = self.function_in_process
+        return None        
 
 class FunctionTranslator(Translator):
     def __init__(self, frame_name,vars_num):
         Translator.__init__(self,frame_name)
         self.total_codes='''({0})'''.format(frame_name) 
-        self.vars_num = vars_num
+        self.vars_num = int(vars_num)
         self.have_complete_code = False
         self.init_local_segment()
 
@@ -393,9 +416,10 @@ class FunctionTranslator(Translator):
                 self.total_codes += self.function_return()
                 return self.get_all_codes()
             result = Translator.process(self,segements)
-            return result
+            self.total_codes += result
+            return None
         else:
-            result = self.function_in_process.process(self,segements)
+            result = self.function_in_process.process(segements)
             if result:
                 self.total_codes += result
                 self.function_in_process = None
@@ -408,7 +432,7 @@ class FunctionTranslator(Translator):
         description += get_label_addr('LCL',-5)
         description += get_value()
         description += move_D_to_reg('R13') # 保存return.addr 
-        description += self.pop_argument(0)
+        description += self.pop_argument('0')
         description += get_label_addr('ARG',1)
         description += move_D_to_reg('SP')
         description += get_label_addr('LCL',-1)
@@ -433,4 +457,42 @@ class FunctionTranslator(Translator):
 if __name__ == '__main__':
     translator = Translator('Foo')
     
-    
+    import translator_parser
+    test_parser = translator_parser.Parser()
+
+    def example_test(inputs):
+        print('TEST A NEW EXAMPLE: \n {0}'.format(inputs))
+        for ins in inputs:
+            segments = test_parser.Process(ins)
+            print(segments)
+            result = translator.process(segments)
+            print(result)
+
+    example1 = ['push constant 0']
+    example_test(example1)
+
+    example2 = ['function main 2',
+                'push constant 1',
+                'push local 1',
+                'add',
+                'return']
+    example_test(example2)
+
+    example3 = ['push constant 17',
+                'push constant 555',
+                'add',
+                'function not_built_in_add 2',
+                'pop argument 0',
+                'pop argument 1',
+                'add',
+                'return',
+                'function main 2',
+                'push constant 1',
+                'push constant 4',
+                'pop argument 1',
+                'pop argument 0',
+                'call not_built_in_add 2',
+                'push constant 17',
+                'call not_built_in_add 2',
+                'return']
+    example_test(example3)

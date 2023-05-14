@@ -202,7 +202,7 @@ class Translator:
             return self.algorithm_ins[message_label]()
         if segments[0] in BranchInsBuiltInKeyWords:
             message_label = segments[0]
-            return self.branch_ins[message_label]
+            return self.branch_ins[message_label](segments[1])
         if segments[0] == 'function':
             return self.function_function(segments[1],segments[2])
         if segments[0] == 'call':
@@ -372,8 +372,7 @@ class Translator:
         label = '{0}$ret.{1}'.format(self.frame_name,function_count)
         
         description =''
-        description += get_label_addr(label,0)
-        description += push_stack()
+        description += basic_code_template_for_push_pure_value(label)
         description += get_label_addr('LCL',0)
         description += push_stack()
         description += get_label_addr('ARG',0)
@@ -496,3 +495,16 @@ if __name__ == '__main__':
                 'call not_built_in_add 2',
                 'return']
     example_test(example3)
+
+    example4 = ['function main 0',
+                'push constant 1',
+                'if-goto DO_SOMETHING',
+                'push constant 100',
+                'goto DO_SOMETHING_END',
+                'label DO_SOMETHING',
+                'push constant 999',
+                'label DO_SOMETHING_END',
+                'push constant 1',
+                'add',
+                'return']
+    example_test(example4)

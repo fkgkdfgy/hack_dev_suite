@@ -174,6 +174,9 @@ class Translator:
         self.function_in_process=None
 
     def process(self,segments):
+        if not segments:
+            return None
+
         if self.function_in_process:
             result = self.function_in_process.process(segments)
             return result
@@ -328,7 +331,7 @@ class Translator:
         return basic_code_template_alg_with_2arg('D=!M')
     
     def branch_label(self,label):
-        return '({0})'.format(label)        
+        return '({0})'.format(self.frame_name+'$'+label)  
 
     def branch_goto(self,label):
         description = '''
@@ -348,10 +351,10 @@ class Translator:
     
     def function_call(self,label,args_num):
         
-        label = '{0}.{1}'.format(label,function_call)
+        label = '{0}$ret.{1}'.format(self.frame_name,function_call)
         
         description =''
-        description += self.branch_goto(label)
+        description += get_label_addr(label,0)
         description += push_stack()
         description += get_label_addr('LCL',0)
         description += push_stack()
@@ -365,18 +368,25 @@ class Translator:
         description += move_D_to_reg('ARG')
         description += get_label_addr('SP',0)
         description += move_D_to_reg('LCL')
-
-        description += self.branch_label(label)
+        description += self.branch_label('$ret.{}'.format(function_call))
 
         function_call+=1
         return description
 
 class FunctionTranslator(Translator):
-    def __init__(self, frame_name,args_num):
+    def __init__(self, frame_name,vars_num):
         Translator.__init__(self,frame_name)
         self.total_codes='''({0})'''.format(frame_name) 
-        self.args_num = args_num
+        self.vars_num = vars_num
         self.have_complete_code = False
+        self.init_local_segment()
+
+    def init_local_segment(self):
+        description=''
+        for i in range(self.vars_num):
+            description += basic_code_template_for_push_pure_value('0')
+        self.total_codes += description
+    
     def process(self,segements):
         if not self.function_in_process:
             if segements[0]=='return':
@@ -422,4 +432,5 @@ class FunctionTranslator(Translator):
 
 if __name__ == '__main__':
     translator = Translator('Foo')
+    
     

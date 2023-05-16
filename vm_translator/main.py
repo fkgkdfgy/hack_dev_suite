@@ -9,19 +9,9 @@ import memory_translator
 
 from utilis import *
 
-
-
-if __name__ == '__main__':
-    arg_parser = argparse.ArgumentParser(description='hack_assembler is used to translate .asm into .hack')
-    arg_parser.add_argument('--vm_file', default=None, type=str)
-
-    args = arg_parser.parse_args()
-
-    if not args.vm_file or not os.path.exists(args.vm_file):
-        raise VMTranslatorException('asm file:{0} is not existed'.format(args.asm_file))
-
-    vm_file = args.vm_file
-    asm_file = args.vm_file+'.asm'
+def process_file(file_path):
+    vm_file = file_path
+    asm_file = file_path+'.asm'
 
     frame_name = os.path.basename(vm_file).split('.')[0]
 
@@ -40,3 +30,29 @@ if __name__ == '__main__':
         if result:
             data_io.write_line(result)
     data_io.close_write()
+
+def process_dir(dir_path):
+    pass
+
+
+if __name__ == '__main__':
+    arg_parser = argparse.ArgumentParser(description='hack_assembler is used to translate .asm into .hack')
+    arg_parser.add_argument('--file', default=None, type=str)
+    arg_parser.add_argument('--dir',default=None,type=str)
+
+    args = arg_parser.parse_args()
+
+    if not args.file and not args.dir:
+        raise VMTranslatorException('please input a file or dir as target of translator')
+    
+    if args.file and not os.path.exists(args.file):
+        raise VMTranslatorException('asm file:{0} is not existed'.format(args.file))
+
+    if args.dir and not os.path.exists(args.dir):
+        raise VMTranslatorException('asm dir:{0} is not existed'.format(args.dir))
+
+    if args.file:
+        process_file(args.file)
+    
+    if args.dir:
+        process_dir(args.dir)

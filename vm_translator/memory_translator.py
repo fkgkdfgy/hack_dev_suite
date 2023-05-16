@@ -197,15 +197,7 @@ class Translator:
         if not segments:
             return None
         print('segments:',segments)
-
-        print('self.function_in_process:',self.function_in_process)
-        if self.function_in_process:
-            result = self.function_in_process.process(segments)
-            if result:
-                self.function_in_process = None
-                standard_result = get_standard_code_block(result)
-                return standard_result
-        elif segments[0] in MemoryInsBuiltInKeyWords:
+        if segments[0] in MemoryInsBuiltInKeyWords:
             if segments[1] in MemorySegmentsBuiltInKeyWords:
                 message_label=segments[0]+'_'+segments[1]
                 result = self.memory_ins[message_label](segments[2])
@@ -217,11 +209,12 @@ class Translator:
         elif segments[0] in BranchInsBuiltInKeyWords:
             message_label = segments[0]
             result = self.branch_ins[message_label](segments[1])
-        elif segments[0] == 'return':
-            raise VMTranslatorException('find a return when the function_in_process is None')
         elif segments[0] in FunctionInsBuiltInKeyWords:
             message_label = segments[0]
-            result = self.function_ins[message_label](segments[1],segments[2])    
+            if message_label == 'return':
+                result = self.function_return()
+            else:
+                result = self.function_ins[message_label](segments[1],segments[2])    
         else:
             raise VMTranslatorException('Unkown instruction label{0}'.format(segments))
 
@@ -407,7 +400,7 @@ class Translator:
     def function_call(self,label,args_num):
 
         global function_count
-        label = '{0}$ret.{1}'.format(self.frame_name,function_count)
+        label = '{0}$ret.{1}'.format(label,function_count)
         
         description =''
         description += basic_code_template_for_push_pure_value(label)
@@ -429,43 +422,14 @@ class Translator:
         return description
 
     def function_function(self,label,nvars):
-        self.function_in_process = FunctionTranslator(self.frame_name+'.'+label,nvars)
-        self.functions[self.frame_name+'.'+label] = self.function_in_process
-        return None        
-
-class FunctionTranslator(Translator):
-    def __init__(self, frame_name,vars_num):
-        Translator.__init__(self,frame_name)
-        self.total_codes='''({0})
-        '''.format(frame_name) 
-        self.total_codes = insert_comment_to_n_line(self.total_codes,' [function {0} {1}]'.format(frame_name,vars_num))
-        self.vars_num = int(vars_num)
-        self.have_complete_code = False
-        self.init_local_segment()
-
-    def init_local_segment(self):
-        description=''
-        for i in range(self.vars_num):
+        function_name = label
+        description = ''
+        description += '''({0})
+        '''.format(function_name) 
+        for i in range(int(nvars)):
             description += basic_code_template_for_push_pure_value('0')
-        self.total_codes += description
-    
-    def process(self,segements):
-        if not self.function_in_process:
-            if segements[0]=='return':
-                self.total_codes += insert_comment_to_n_line(self.function_return(),'// [return]')
-                return self.get_all_codes()
-            result = Translator.process(self,segements)
-            if result:
-                self.total_codes += result
-            return None
-        else:
-            result = self.function_in_process.process(segements)
-            if result:
-                self.total_codes += result
-                self.function_in_process = None
-            return None
-    def get_all_codes(self):
-        return self.total_codes
+        self.frame_name = label
+        return description    
 
     def function_return(self):
         description = ''

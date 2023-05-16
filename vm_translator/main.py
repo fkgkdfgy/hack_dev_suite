@@ -23,9 +23,11 @@ if __name__ == '__main__':
     vm_file = args.vm_file
     asm_file = args.vm_file+'.asm'
 
+    frame_name = os.path.basename(vm_file).split('.')[0]
+
     data_io = translator_io.TextIO(vm_file,asm_file)
     sentense_parser = translator_parser.Parser()
-    translator = memory_translator.Translator()
+    translator = memory_translator.Translator(frame_name)
 
     new_line = data_io.get_line()
     while new_line:

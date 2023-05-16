@@ -22,73 +22,63 @@ def basic_check(f):
     return inner_function
 
 # 新的地址保存在D中
-@add_comment(comment='// get base_addr + offset into D registor')
+# @add_comment(comment='// get base_addr + offset into D registor')
 def get_label_addr(builtin_label,offset):
     int_offset = int(offset)
-    description = '''
-    @{1}
-    D=A
-
-    @{0}
-    D=M{2}D
+    description = '''@{1}
+                     D=A
+                     @{0}
+                     D=M{2}D
     '''.format(builtin_label,str(abs(int_offset)),'+' if int_offset>0 else '-')
     return description
 
 
 # 默认需要保存的数据存储在D中
-@add_comment(comment='// push data in D reg into stack')
+# @add_comment(comment='// push data in D reg into stack')
 def push_stack():
-    description='''
-    @SP
-    A=M
-    M=D
-
-    @SP
-    M=M+1
+    description='''@SP
+                    A=M
+                    M=D
+                    @SP
+                    M=M+1
     '''
     return description
 
-# 默认pop 的目标地址保存在 D 寄存器
-@add_comment(comment='// pop data in stack into D reg')
+# 默认pop 的弹出的数据保存在 D 寄存器
+# @add_comment(comment='// pop data in stack into D reg')
 def pop_stack():
-    description='''
-    @R13
-    M=D
-
-    @SP
-    A=M-1
-    D=M
-
-    @SP
-    M=M-1
-
-    @R13
-    A=M
-    M=D
+    description='''@SP  
+                    A=M-1
+                    D=M
+                    @SP
+                    M=M-1
     '''
     return description
 
-@add_comment(comment='// save the data of addr stored in D registor into D')
+# @add_comment(comment='// save the data of addr stored in D registor into D')
 def get_value():
-    description='''
-    A=D
-    D=M
+    description='''A=D
+                   D=M
     '''
     return description
 
-@add_comment(comment='// move data stored in Reg into D reg')
+def move_constant_to_D(value):
+    description ='''@{0}
+                     D=A
+                     '''.format(value)
+    return description
+
+# @add_comment(comment='// move data stored in Reg into D reg')
 def move_reg_to_D(reg):
-    description='''
-    @{0}
-    D=M
+    description='''@{0}
+                   D=M
     '''.format(reg)
     return description
 
-@add_comment(comment='// move data stored in D into other Reg')
+# @add_comment(comment='// move data stored in D into other Reg')
 def move_D_to_reg(reg):
-    description='''
-    @{0}
-    M=D
+    description='''@{0}
+                   M=D
     '''.format(reg)
     return description
 
@@ -102,15 +92,17 @@ def basic_code_template_for_push(base_addr,offset):
 def basic_code_template_for_pop(base_addr,offset):
     description = ''
     description += get_label_addr(base_addr,offset)
+    description += move_D_to_reg('R13')
     description += pop_stack()
+    description += '''@R13
+                      A=M
+                      M=D
+    '''
     return description
 
 def basic_code_template_for_push_pure_value(pure_value):
     description = ''
-    description +='''
-    @{0}
-    D=A
-    '''.format(pure_value)
+    description += move_constant_to_D(pure_value)
     description += push_stack()
     return description
 
@@ -119,21 +111,36 @@ def basic_code_template_alg_with_2arg(alg):
     description += pop_stack()
     description += move_D_to_reg('R13')
     description += pop_stack()
-    description += '''
-    @R13
-    {0}
-    '''.format(alg)
+    description += '''@R13
+                      {0}
+                      '''.format(alg)
     description += push_stack()
     return description
 
 def basic_code_template_alg_with_1arg(alg):
     description = ''
     description += pop_stack()
-    description += '''
-    {0}
+    description += '''{0}
     '''.format(alg)
     description += push_stack()
     return description
+
+def get_standard_code_block(code):
+    result = ''
+    while code :
+        index = code.find('\n')
+        index = index if index >=0 else len(code)-1
+        target_line = code[0:index+1]
+        while target_line and target_line[0] == ' ':
+            target_line =target_line[1:]
+        result += target_line
+        code = code[index+1:]
+    return result
+        
+def insert_comment_to_n_line(code,comment):
+    index = code.find('\n')
+    index = index if index>=0 else len(code)
+    return code[0:index]+'// {0}'.format(comment) + code[index:]
 
 MemoryInsBuiltInKeyWords=['pop','push']
 MemorySegmentsBuiltInKeyWords=['local','argument','this','that','temp','pointer','static','constant']
@@ -180,37 +187,49 @@ class Translator:
         self.branch_ins = {'goto':self.branch_goto,
                            'label':self.branch_label,
                            'if-goto':self.branch_if_goto}
+        self.function_ins = {'function':self.function_function,
+                             'call':self.function_call,
+                             }
         self.functions = {}
         self.function_in_process=None
 
     def process(self,segments):
         if not segments:
             return None
+        print('segments:',segments)
 
+        print('self.function_in_process:',self.function_in_process)
         if self.function_in_process:
             result = self.function_in_process.process(segments)
             if result:
                 self.function_in_process = None
-            return result
-        if segments[0] in MemoryInsBuiltInKeyWords:
+                standard_result = get_standard_code_block(result)
+                return standard_result
+        elif segments[0] in MemoryInsBuiltInKeyWords:
             if segments[1] in MemorySegmentsBuiltInKeyWords:
                 message_label=segments[0]+'_'+segments[1]
-                return self.memory_ins[message_label](segments[2])
-            raise VMTranslatorException('Unkown instruction label{0} is not find in MemorySegmentsBuiltInKeyWords'.format(segments[1]))
-        if segments[0] in AlgInsBuiltInKeyWords:
+                result = self.memory_ins[message_label](segments[2])
+            else:
+                raise VMTranslatorException('Unkown instruction label{0} is not find in MemorySegmentsBuiltInKeyWords'.format(segments[1]))
+        elif segments[0] in AlgInsBuiltInKeyWords:
             message_label = segments[0]
-            return self.algorithm_ins[message_label]()
-        if segments[0] in BranchInsBuiltInKeyWords:
+            result = self.algorithm_ins[message_label]()
+        elif segments[0] in BranchInsBuiltInKeyWords:
             message_label = segments[0]
-            return self.branch_ins[message_label](segments[1])
-        if segments[0] == 'function':
-            return self.function_function(segments[1],segments[2])
-        if segments[0] == 'call':
-            return self.function_call(segments[1],segments[2])
-        if segments[0] == 'return':
+            result = self.branch_ins[message_label](segments[1])
+        elif segments[0] == 'return':
             raise VMTranslatorException('find a return when the function_in_process is None')
-            
-        raise VMTranslatorException('Unkown instruction label{0}'.format(segments))
+        elif segments[0] in FunctionInsBuiltInKeyWords:
+            message_label = segments[0]
+            result = self.function_ins[message_label](segments[1],segments[2])    
+        else:
+            raise VMTranslatorException('Unkown instruction label{0}'.format(segments))
+
+        if result:
+            standard_result = get_standard_code_block(result)
+            standard_result_with_code_as_comment = insert_comment_to_n_line(standard_result,'[ {0} ]'.format(' '.join(segments)))
+            return standard_result_with_code_as_comment
+        return None
     
     @basic_check
     def push_local(self,offset):
@@ -250,37 +269,59 @@ class Translator:
 
     @basic_check
     def push_temp(self,offset):
-        if offset>7:
+        if int(offset)>7:
             raise VMTranslatorException('offset({0}) for temp is larger than 7'.format(offset))
-        pure_value = 'R{0}'.format(5+offset)
-        return basic_code_template_for_push(pure_value,0)
+        target_reg = 'R{0}'.format(5+int(offset))
+        description=''
+        description+=move_reg_to_D(target_reg)
+        description+=push_stack()
+        return description
 
     @basic_check
     def pop_temp(self,offset):
         if int(offset)>7:
             raise VMTranslatorException('offset({0}) for temp is larger than 7'.format(offset))
-        pure_value = 'R{0}'.format(5+offset)
-        return basic_code_template_for_pop(pure_value,0)
+        target_reg = 'R{0}'.format(5+int(offset))
+        description =''
+        description += pop_stack()
+        description += move_D_to_reg(target_reg)
+        return description
 
     @basic_check
     def push_pointer(self,offset):
         if int(offset) not in [0,1]:
             raise VMTranslatorException('offset({0}) for pointer is not 0 or 1'.format(offset))
-        return basic_code_template_for_push('THIS' if 0 else 'THAT',0)
+        target_reg = 'THIS' if int(offset)==0 else 'THAT'
+        description=''
+        description+=move_reg_to_D(target_reg)
+        description+=push_stack()
+        return description
 
     @basic_check
     def pop_pointer(self,offset):
         if int(offset) not in [0,1]:
             raise VMTranslatorException('offset({0}) for pointer is not 0 or 1'.format(offset))
-        return basic_code_template_for_pop('THIS' if 0 else 'THAT',0)
-
+        target_reg = 'THIS' if int(offset)==0 else 'THAT'
+        description =''
+        description += pop_stack()
+        description += move_D_to_reg(target_reg)
+        return description
+        
     @basic_check
     def push_static(self,offset):
-        return basic_code_template_for_push(self.frame_name+'.'+offset,0)
+        target_reg = self.frame_name+'.'+offset
+        description=''
+        description+=move_reg_to_D(target_reg)
+        description+=push_stack()
+        return description
 
     @basic_check
     def pop_static(self,offset):
-        return basic_code_template_for_push(self.frame_name+'.'+offset,0)
+        target_reg = self.frame_name+'.'+offset
+        description =''
+        description += pop_stack()
+        description += move_D_to_reg(target_reg)
+        return description
 
     # alg 中默认M保存的是第一个从栈中提取的参数
     #     如果需要两个参数 D 中保留最后一个从栈中提取的参数
@@ -295,43 +336,43 @@ class Translator:
         return basic_code_template_alg_with_1arg('D=-D')
 
     def alg_eq(self):
-        alg = '''
-        @{1}_EQTrue_{0}
-        D=D-M;JEQ
-        @{1}_EQTrueEnd_{0}
-        D=0
-        0;JMP
-        ({1}_EQTrue_{0})
-        D=-1
-        ({1}_EQTrueEnd_{0})
+        alg = '''D=D-M
+                @{1}_EQTrue_{0}
+                D;JEQ
+                @{1}_EQTrueEnd_{0}
+                D=0
+                0;JMP
+                ({1}_EQTrue_{0})
+                D=-1
+                ({1}_EQTrueEnd_{0})
         '''.format(self.eq_count,self.frame_name.upper())
         self.eq_count +=1
         return basic_code_template_alg_with_2arg(alg)
 
     def alg_gt(self):
-        alg = '''
-        @{1}_GTTrue_{0}
-        D=D-M;JGT
-        @{1}_GTTrueEnd_{0}
-        D=0
-        0;JMP
-        ({1}_GTTrue_{0})
-        D=-1
-        ({1}_GTTrueEnd_{0})
+        alg = '''D=D-M
+                @{1}_GTTrue_{0}
+                D;JGT
+                @{1}_GTTrueEnd_{0}
+                D=0
+                0;JMP
+                ({1}_GTTrue_{0})
+                D=-1
+                ({1}_GTTrueEnd_{0})
         '''.format(self.gt_count,self.frame_name.upper())
         self.gt_count +=1
         return basic_code_template_alg_with_2arg(alg)
 
     def alg_lt(self):
-        alg = '''
-        @{1}_LTTrue_{0}
-        D=D-M;JLT
-        @{1}_LTTrueEnd_{0}
-        D=0
-        0;JMP
-        ({1}_LTTrue_{0})
-        D=-1
-        ({1}_LTTrueEnd_{0})
+        alg = '''D=D-M
+                @{1}_LTTrue_{0}
+                D;JLT
+                @{1}_LTTrueEnd_{0}
+                D=0
+                0;JMP
+                ({1}_LTTrue_{0})
+                D=-1
+                ({1}_LTTrueEnd_{0})
         '''.format(self.lt_count,self.frame_name.upper())
         self.lt_count +=1
         return basic_code_template_alg_with_2arg(alg)
@@ -343,26 +384,23 @@ class Translator:
         return basic_code_template_alg_with_2arg('D=M|D')
 
     def alg_not(self):
-        return basic_code_template_alg_with_2arg('D=!M')
+        return basic_code_template_alg_with_1arg('D=!D')
     
     def branch_label(self,label):
-        return '''
-        ({0})
+        return '''({0})
         '''.format(self.frame_name+'$'+label)  
 
     def branch_goto(self,label):
-        description = '''
-        @{0}${1}
-        0;JMP
+        description = '''@{0}${1}
+                         0;JMP
         '''.format(self.frame_name,label) 
         return description
 
     def branch_if_goto(self,label):
         description = ''
         description += pop_stack()
-        description += '''
-        @{0}${1}
-        D;JNE
+        description += '''@{0}${1}
+                          D;JNE
         '''.format(self.frame_name,label)
         return description
     
@@ -398,7 +436,9 @@ class Translator:
 class FunctionTranslator(Translator):
     def __init__(self, frame_name,vars_num):
         Translator.__init__(self,frame_name)
-        self.total_codes='''({0})'''.format(frame_name) 
+        self.total_codes='''({0})
+        '''.format(frame_name) 
+        self.total_codes = insert_comment_to_n_line(self.total_codes,' [function {0} {1}]'.format(frame_name,vars_num))
         self.vars_num = int(vars_num)
         self.have_complete_code = False
         self.init_local_segment()
@@ -412,10 +452,11 @@ class FunctionTranslator(Translator):
     def process(self,segements):
         if not self.function_in_process:
             if segements[0]=='return':
-                self.total_codes += self.function_return()
+                self.total_codes += insert_comment_to_n_line(self.function_return(),'// [return]')
                 return self.get_all_codes()
             result = Translator.process(self,segements)
-            self.total_codes += result
+            if result:
+                self.total_codes += result
             return None
         else:
             result = self.function_in_process.process(segements)
@@ -447,9 +488,8 @@ class FunctionTranslator(Translator):
         description += get_value()
         description += move_D_to_reg('LCL')
         description += move_reg_to_D('R13')
-        description += '''
-        A=D
-        0;JMP
+        description += '''A=D
+                          0;JMP
         '''
         return description
 

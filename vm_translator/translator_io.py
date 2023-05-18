@@ -7,13 +7,18 @@ import argparse
 class TextIO:
     def __init__(self,asm_file,hack_file):
         self.text_file = asm_file
-        flow = open(asm_file,mode='r')
-        self.lines = flow.readlines()
+        self.lines = []
+        if self.text_file:
+            flow = open(asm_file,mode='r')
+            self.lines = flow.readlines()
         self.count = 0
-        self.file_to_write = open(hack_file,mode='w+')
+        self.file_to_write = None
+        if hack_file:
+            self.file_to_write = open(hack_file,mode='w+')
         flow.close()
 
     def get_line(self):
+
         if self.count<len(self.lines):
             line = self.lines[self.count]
             self.count+=1
@@ -22,10 +27,12 @@ class TextIO:
             return None
     
     def write_line(self,sentense):
-        self.file_to_write.write(sentense)
+        if self.file_to_write:
+            self.file_to_write.write(sentense)
 
     def close_write(self):
-        self.file_to_write.close()
+        if self.file_to_write:
+            self.file_to_write.close()
 
     def reset(self,asm_file,hack_file):
         self.close_write()
@@ -33,6 +40,9 @@ class TextIO:
 
     def reset_line_count(self):
         self.count = 0
+    
+    def get_all_lines(self):
+        return self.lines
 
 if __name__ == '__main__':
     test_io = TextIO('/home/vensin/hack_assembler/test_material/test_io.txt',

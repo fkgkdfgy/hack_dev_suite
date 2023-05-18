@@ -400,10 +400,10 @@ class Translator:
     def function_call(self,label,args_num):
 
         global function_count
-        label = '{0}$ret.{1}'.format(label,function_count)
+        ret_label = '{0}$ret.{1}'.format(label,function_count)
         
         description =''
-        description += basic_code_template_for_push_pure_value(label)
+        description += basic_code_template_for_push_pure_value(ret_label)
         description += get_label_addr('LCL',0)
         description += push_stack()
         description += get_label_addr('ARG',0)
@@ -416,7 +416,11 @@ class Translator:
         description += move_D_to_reg('ARG')
         description += get_label_addr('SP',0)
         description += move_D_to_reg('LCL')
-        description += self.branch_label('ret.{0}'.format(function_count))
+        description +='''@{0}
+                         0;JMP
+        '''.format(label) 
+        description += '''({0})
+        '''.format(ret_label)
 
         function_count+=1
         return description
@@ -435,7 +439,7 @@ class Translator:
         description = ''
         description += get_label_addr('LCL',-5)
         description += get_value()
-        description += move_D_to_reg('R13') # 保存return.addr 
+        description += move_D_to_reg('R14') # 保存return.addr 
         description += self.pop_argument('0')
         description += get_label_addr('ARG',1)
         description += move_D_to_reg('SP')
@@ -451,7 +455,7 @@ class Translator:
         description += get_label_addr('LCL',-4)
         description += get_value()
         description += move_D_to_reg('LCL')
-        description += move_reg_to_D('R13')
+        description += move_reg_to_D('R14')
         description += '''A=D
                           0;JMP
         '''

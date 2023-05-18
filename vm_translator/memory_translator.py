@@ -153,6 +153,7 @@ function_count = 0
 class Translator:
 
     def __init__(self,frame_name):
+        self.static_name = frame_name
         self.frame_name = frame_name
         self.eq_count = 0
         self.gt_count = 0
@@ -302,7 +303,7 @@ class Translator:
         
     @basic_check
     def push_static(self,offset):
-        target_reg = self.frame_name+'.'+offset
+        target_reg = self.static_name+'.'+offset
         description=''
         description+=move_reg_to_D(target_reg)
         description+=push_stack()
@@ -310,8 +311,8 @@ class Translator:
 
     @basic_check
     def pop_static(self,offset):
-        target_reg = self.frame_name+'.'+offset
-        description =''
+        target_reg = self.static_name+'.'+offset
+        description = ''
         description += pop_stack()
         description += move_D_to_reg(target_reg)
         return description

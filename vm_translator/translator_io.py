@@ -4,6 +4,11 @@ import os
 import sys
 import argparse
 
+class VMIOException(Exception):
+    pass
+
+
+
 class TextIO:
     def __init__(self,asm_file,hack_file):
         self.text_file = asm_file
@@ -11,14 +16,15 @@ class TextIO:
         if self.text_file:
             flow = open(asm_file,mode='r')
             self.lines = flow.readlines()
+            flow.close()
         self.count = 0
         self.file_to_write = None
         if hack_file:
             self.file_to_write = open(hack_file,mode='w+')
-        flow.close()
 
     def get_line(self):
-
+        if not self.lines:
+            raise VMIOException('try to get line from a empty IO, please check IO text_file{0}'.format(self.text_file))
         if self.count<len(self.lines):
             line = self.lines[self.count]
             self.count+=1
@@ -27,6 +33,8 @@ class TextIO:
             return None
     
     def write_line(self,sentense):
+        if not self.file_to_write:
+            raise VMIOException('try to write line from a empty IO, please check IO file_to_write{0}'.format(self.file_to_write))
         if self.file_to_write:
             self.file_to_write.write(sentense)
 

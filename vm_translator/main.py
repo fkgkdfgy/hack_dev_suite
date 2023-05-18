@@ -9,15 +9,11 @@ import memory_translator
 
 from utilis import *
 
-def process_file(codes,vm_path,asm_file):
-    vm_file = vm_path
-    asm_file = asm_file
-
-    frame_name = os.path.basename(asm_file).split('.')[0]
-
-    data_io = translator_io.TextIO(vm_file,asm_file)
+def process_file(codes,file_name):
     sentense_parser = translator_parser.Parser()
-    translator = memory_translator.Translator(frame_name)
+    translator = memory_translator.Translator(file_name)
+
+    result_codes = ''
 
     for line in codes:
         new_line = line[0:-1]
@@ -26,24 +22,11 @@ def process_file(codes,vm_path,asm_file):
         print(segments)
         result = translator.process(segments)
         if result:
-            data_io.write_line(result)
-    data_io.close_write()
+            result_codes += result
 
+    return result_codes
 
 def process_dir(dir_path):
-    
-    def get_all_codes(file_list):
-        total_codes = []
-        sys_file = os.path.join(dir_path,'Sys.vm')
-        if sys_file in file_list:
-            data_io = translator_io.TextIO(sys_file, None)    
-            total_codes.extend(data_io.get_all_lines())
-            file_list.remove(sys_file)
-        
-        for file in file_list:
-            data_io = translator_io.TextIO(file, None)    
-            total_codes.extend(data_io.get_all_lines())
-        return total_codes 
 
     def split_files_and_dirs(dir_path):
 
@@ -56,9 +39,10 @@ def process_dir(dir_path):
                 if split_names and split_names[-1] == 'vm':
                     return True
             return False
-        
-        files = os.listdir(dir_path)
+
         file_list,dir_list,abs_file_list,abs_dir_list = [],[],[],[]
+        files = os.listdir(dir_path)
+        
         for file_name in files:
             abs_file_name = os.path.join(dir_path,file_name)
             if IsDir(abs_file_name):
@@ -77,12 +61,33 @@ def process_dir(dir_path):
 
     for dir in dir_list:
         process_dir(os.path.join(dir_path,dir))
+
+    if not file_list:
+        return 
+
+    # 先处理 Sys.vm 这个文件
+    total_codes = ''
+    if 'Sys.vm' in file_list:
+        abs_sys_file = os.path.join(dir_path,'Sys.vm')
+        data_io = translator_io.TextIO(abs_sys_file, None)   
+        file_list.remove('Sys.vm')
+
+        codes = data_io.get_all_lines()
+        result_codes = process_file(codes,'Sys')
+        total_codes += result_codes
+
+    for file in file_list:    
+        abs_file = os.path.join(dir_path,file)
+        data_io = translator_io.TextIO(abs_file, None)   
+
+        codes = data_io.get_all_lines()
+        result_codes = process_file(codes,file[0:-3])
+        total_codes += result_codes
     
-    total_codes = get_all_codes(file_list)
-
-    target_asm_file = os.path.join(dir_path,'Sys.vm.asm')
-    process_file(codes=total_codes,vm_path=None,asm_file=target_asm_file)
-
+    data_io = translator_io.TextIO(None,os.path.join(dir_path,'Sys.asm'))
+    for code in total_codes:
+        data_io.write_line(code)
+    data_io.close_write()
 
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser(description='hack_assembler is used to translate .asm into .hack')

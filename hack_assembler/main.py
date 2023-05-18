@@ -2,6 +2,7 @@
 
 import sys
 import os
+import argparse
 import assembler_parser 
 import assembler_io
 import assembler_symboltable
@@ -12,8 +13,16 @@ from utilis import *
 
 
 if __name__ == '__main__':
-    asm_file = sys.argv[1]
-    hack_file = sys.argv[1]+'.hack'
+    arg_parser = argparse.ArgumentParser(description='hack_assembler is used to translate .asm into .hack')
+    arg_parser.add_argument('--asm_file', default=None, type=str)
+
+    args = arg_parser.parse_args()
+
+    if not args.asm_file or not os.path.exists(args.asm_file):
+        raise AssemblerException('asm file:{0} is not existed'.format(args.asm_file))
+
+    asm_file = args.asm_file
+    hack_file = args.asm_file+'.hack'
 
     data_io = assembler_io.TextIO(asm_file,hack_file)
     sentense_parser = assembler_parser.Parser()

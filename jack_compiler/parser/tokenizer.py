@@ -1,16 +1,7 @@
 
 from utils import *
 
-BuiltInKeywords=['class' , 'constructor' , 'function' ,
-                 'method' , 'field' , 'static' , 'var' , 'int' , 
-                 'char' , 'boolean' , 'void' , 'true' , 'false' , 
-                 'null' , 'this' , 'let' , 'do' , 'if' , 'else' , 
-                 'while' , 'return']
 
-BuiltInSymbol = ['{' , '}' , '(' , ')' , '[' , ']' , '. ' , ', ' , '; ' , '+' , '-' , '*' , 
-                 '/' , '&' , ',' , '<' , '>' , '=' , '~']
-
-SegmentSymbol = [' ','\t','\r','\n','"']
 
 def isKeyword(word):
     return word in BuiltInKeywords
@@ -48,14 +39,6 @@ def removeHeadChar(line):
         line = line[1:]
     return line
 
-def common_convert(type):
-    def inner_helper(word):
-        return "<{0}> {1} </{0}>".format(type,word)
-    return inner_helper
-
-def string_convert(word):
-    return "<{0}> {1} </{0}>".format("stringConst",word[1:-1])
-
 class Tokenizer:
     def __init__(self) -> None:
         self.token_func={'keyword':(isKeyword,common_convert('keyword')),
@@ -65,9 +48,12 @@ class Tokenizer:
                          'identifier':(isIdentifer,common_convert('identifier'))}
 
     def segementLine(self,line,words):
+        # 如果line 为空, 直接返回
         if not line:
             return
         
+        # 如果第一个符号是 “ 向后寻找下一个 ” 然后取这其中的word(带着两边双引号)
+        # ie. line == "words" words.append("words")
         if line[0] == '"':
             index = line[1:].find('"')
             if index<0:
@@ -76,27 +62,35 @@ class Tokenizer:
             self.segementLine(line[index+1:],words)
             return
         
-        if line[0] in BuiltInKeywords:
+        # 如果是 BuiltInSymbol 就保存这个 symbol
+        if line[0] in BuiltInSymbol:
             words.append(line[0])
             self.segementLine(line[1:],words)
             return 
         
+        # 如果是分割符号，就跳过继续进行分割
         if line[0] in SegmentSymbol:
             self.segementLine(line[1:],words)
             return
         
+        # 提取第一个Sumbol前的整个字段
         for index, char in enumerate(line):
             if char in BuiltInSymbol or char in SegmentSymbol:
                 words.append(line[0:index])
                 self.segementLine(line[index:],words)
-                break                
-        return 
-    
+                return                
+            
+        # 获取整个line 这出现在整个line 都是字符的情况
+        words.append(line)
+        return
+
     def transformWordIntoXML(self,word):
-        for key,value in self.token_func:
+        for key,value in self.token_func.items():
             judge_func,convert_func = value
             if judge_func(word):
-                return convert_func(word)
+                xml = convert_func(word)
+                word_and_type=(word if not key == 'stringConst' else word[1:-1],key)
+                return xml,word_and_type 
         raise ParserException('unable to recognize this word{0}'.format(word))
 
     def processLine(self,line):
@@ -105,12 +99,38 @@ class Tokenizer:
         if not line:
             return ''
         
-        result = ''
         words = []
         self.segementLine(line,words)
+       
+        result = ''
+        words_and_types = []
         for word in words:
-            result += self.transformWordIntoXML(word) + "\n"
-        return result
+            xml, word_and_type = self.transformWordIntoXML(word)
+            result += xml + "\n"
+            words_and_types.append(word_and_type)
+        return result,words_and_types
     
+if __name__ == "__main__":
+    tokenizer = Tokenizer()
     
-        
+    # test line segments 
+    line = "do calculate(x1,x2,e23_123);"
+    words = []
+    tokenizer.segementLine(line,words)
+    print(words)
+
+    line = '''while(~(x=10)){}'''
+    words = []
+    tokenizer.segementLine(line,words)
+    print(words)
+
+    line = '''          while(~(x=10)){do calculate(x1,x2,e23_123);} // test comment '''
+    total_xml,unstructured_list = tokenizer.processLine(line)
+    print(total_xml)
+    print(unstructured_list)
+
+    # more unit test
+    line = '''class Main {  function void main() { var SquareGame game; let game = SquareGame.new(); do game.run(); do game.dispose(); return; } }'''
+    total_xml,unstructured_list = tokenizer.processLine(line)
+    print(total_xml)
+    print(unstructured_list)

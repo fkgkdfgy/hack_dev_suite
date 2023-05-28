@@ -36,9 +36,22 @@ class ParameterListHandler:
     
     def processXML(self,unstructured_xml):
         # 1. 从XML中提取出type
+        param_type = unstructured_xml[0][0]
+        name_type = unstructured_xml[0][1]
+        self.xml += common_convert(name_type)(param_type) + "\n"
         # 2. 从XML中提取出varName
+        param_name = unstructured_xml[1][0]
+        name_type = unstructured_xml[1][1]
+        self.xml += common_convert(name_type)(param_name) + "\n"
         # 3. 从XML中提取出','type varName (如果有的话)
-        pass
+        for index in range(2,len(unstructured_xml)):
+            if unstructured_xml[index][0] == ',':
+                param_type = unstructured_xml[index+1][0]
+                name_type = unstructured_xml[index+1][1]
+                self.xml += common_convert(name_type)(param_type) + "\n"
+                param_name = unstructured_xml[index+2][0]
+                name_type = unstructured_xml[index+2][1]
+                self.xml += common_convert(name_type)(param_name) + "\n"
 
     def toXML(self):
         return self.xml
@@ -63,12 +76,32 @@ class SubroutineDecHandler:
 
     def processXML(self,unstructured_xml):
         #1. 从XML中提取出constructor|function|method
+        subroutine_type = unstructured_xml[0][0]
+        name_type = unstructured_xml[0][1]
+        self.xml += common_convert(name_type)(subroutine_type) + "\n"
         #2. 从XML中提取出void|type
+        subroutine_return_type = unstructured_xml[1][0]
+        name_type = unstructured_xml[1][1]
+        self.xml += common_convert(name_type)(subroutine_return_type) + "\n"
         #3. 从XML中提取出subroutineName
+        subroutine_name = unstructured_xml[2][0]
+        name_type = unstructured_xml[2][1]
+        self.xml += common_convert(name_type)(subroutine_name) + "\n"
         #4. 从XML中提取出'('
-        #5. 从XML中提取出parameterList
+        if not unstructured_xml[3][0] == '(':
+            raise GrammarException("subroutineDec must have '('")
+        self.xml += common_convert('symbol')('(') + "\n"
+        #5. 从XML中提取出parameterList, 这里有些问题, 因为parameterList中可能没有参数
+        param_list_handler = ParameterListHandler()
+        param_list_handler.processXML(unstructured_xml[4:-1])
+        self.xml += param_list_handler.toXML()
         #6. 从XML中提取出')'
+        if not unstructured_xml[-1][0] == ')':
+            raise GrammarException("subroutineDec must have ')'")
+        self.xml += common_convert('symbol')(')') + "\n"
         #7. 从XML中提取出subroutineBody
+        subroutine_body_handler = SubroutineBodyHandler()
+        subroutine_body_handler.processXML(unstructured_xml[5:-1])
         pass
 
     def toXML(self):    

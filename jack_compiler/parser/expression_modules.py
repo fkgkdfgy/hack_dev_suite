@@ -10,6 +10,7 @@ class BaseHandler:
 
     def __init__(self, unstructed_xml=None):
         if unstructed_xml:
+            self.xml = ''
             self.processXML(unstructed_xml)
         else:
             self.xml = ''
@@ -212,7 +213,7 @@ class ExpressionListHandler(BaseHandler):
         raise ExpressionException("this function should not be called")
 
 class ExpressionHandler(BaseHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'expression'
 
     def __init__(self, unstructed_xml=None):
@@ -236,7 +237,7 @@ class ExpressionHandler(BaseHandler):
                 else:
                     raise ExpressionException("something wrong with {0}".format(unstructured_xml))            
 
-        if isExpression(unstructured_xml):
+        if ExpressionHandler.isExpression(unstructured_xml):
             recursive_fill_children(unstructured_xml)
             self.xml = ''
             for child in children:
@@ -261,13 +262,18 @@ class ExpressionHandler(BaseHandler):
         if TermHandler.isTerm(unstructured_xml):
             return 0
         find_length = TermHandler.findTerm(unstructured_xml)
-        if find_length!=-1 and OpHandler.isOp(unstructured_xml[find_length:find_length+1]):
-            return find_length + 1 + ExpressionHandler.findExpression(unstructured_xml[find_length+1:])
+        if find_length!=-1:
+            if OpHandler.isOp(unstructured_xml[find_length:find_length+1]):
+                return find_length + 1 + ExpressionHandler.findExpression(unstructured_xml[find_length+1:])
+            return find_length
         return -1
 
 @common_empty_check
 def isPureFunctionCall(unstructured_xml):
-    if  unstructured_xml[0][0] == '(' and unstructured_xml[-1][0] == ')' and ExpressionListHandler.isExpressionList(unstructured_xml[2:-1]):
+    if VarNameHandler.isVarName(unstructured_xml[0:1])  \
+        and unstructured_xml[1][0] == '(' \
+        and unstructured_xml[-1][0] == ')' \
+        and ExpressionListHandler.isExpressionList(unstructured_xml[2:-1]):
         return True
     return False
 
@@ -363,7 +369,7 @@ def isUnaryOpTerm(unstructured_xml):
 # 对应varName[expression]
 @common_empty_check
 def isArrayGet(unstructured_xml):
-    if VarNameHandler.isVarName(unstructured_xml[0]) \
+    if VarNameHandler.isVarName(unstructured_xml[0:1]) \
         and unstructured_xml[1][0] == '[' \
         and unstructured_xml[-1][0] == ']' \
         and ExpressionHandler.isExpression(unstructured_xml[2:-1]):

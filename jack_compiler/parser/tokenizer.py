@@ -97,7 +97,7 @@ class Tokenizer:
         line = removeComment(line)
         line = removeHeadChar(line)
         if not line:
-            return ''
+            return '',[]
         
         words = []
         self.segementLine(line,words)

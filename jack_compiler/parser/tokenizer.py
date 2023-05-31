@@ -58,8 +58,8 @@ class Tokenizer:
             index = line[1:].find('"')
             if index<0:
                 raise ParserException("something wrong with {0}".format(line))
-            words.append(line[0:index+1])
-            self.segementLine(line[index+1:],words)
+            words.append(line[0:index+2])
+            self.segementLine(line[index+2:],words)
             return
         
         # 如果是 BuiltInSymbol 就保存这个 symbol

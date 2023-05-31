@@ -22,3 +22,10 @@ def common_convert(type):
 
 def string_convert(word):
     return "<{0}> {1} </{0}>".format("stringConst",word[1:-1])
+
+def common_empty_check(func):
+    def inner_helper(word):
+        if not word:
+            return False
+        return func(word)
+    return inner_helper

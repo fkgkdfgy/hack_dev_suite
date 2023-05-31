@@ -5,8 +5,11 @@ class BaseHandler:
     isTerminal = False
     label = ''
 
-    def __init__(self, parser):
-        self.xml = ''
+    def __init__(self, unstructed_xml=None):
+        if unstructed_xml:
+            self.xml = self.processXML(unstructed_xml)
+        else:
+            self.xml = ''
     
     def toXML(self):
         result_xml = ''

@@ -16,11 +16,15 @@ class KeywordConstantHandler(BaseHandler):
         else:
             raise ExpressionException("something wrong with {0}".format(unstructured_xml))
     
-    # 如果能从unstructured_xml中提取出一个keywordConstant，就返回1，否则返回-1
+    # 如果能从unstructured_xml中提取出一个keywordConstant，就返回1，否则返0
     def isKeywordConstant(unstructured_xml):
+
+        if not unstructured_xml:
+            return 0
+        
         if unstructured_xml[0][1] == 'keyword' and unstructured_xml[0][0] in ['true','false','null','this']:
             return 1
-        return -1
+        return 0
 
 class UnaryOpHandler(BaseHandler):
     isTerminal = True
@@ -33,11 +37,13 @@ class UnaryOpHandler(BaseHandler):
         else:
             raise ExpressionException("something wrong with {0}".format(unstructured_xml))
 
-    # 如果能从unstructured_xml中提取出一个unaryOp，就返回1，否则返回-1
+    # 如果能从unstructured_xml中提取出一个unaryOp，就返回1，否则返回0
     def isUnaryOp(unstructured_xml):
+        if not unstructured_xml:
+            return 0
         if unstructured_xml[0][1] == 'symbol' and unstructured_xml[0][0] in ['~','-']:
             return 1
-        return -1
+        return 0
 
 class OpHandler(BaseHandler):
     isTerminal = True
@@ -50,10 +56,14 @@ class OpHandler(BaseHandler):
         else:
             raise ExpressionException("something wrong with {0}".format(unstructured_xml))
 
+    
     def isOp(unstructured_xml):
+        if not unstructured_xml:
+            return 0
+        
         if unstructured_xml[0][1] == 'symbol' and unstructured_xml[0][0] in ['+','-','*','/','&','|','<','>','=']:
             return 1
-        return -1
+        return 0
 
 class VarNameHandler(BaseHandler):
     isTerminal = True
@@ -66,11 +76,13 @@ class VarNameHandler(BaseHandler):
         else:
             raise ExpressionException("something wrong with {0}".format(unstructured_xml))
 
-    # 如果能从unstructured_xml中提取出一个varName，就返回1，否则返回-1
+    # 如果能从unstructured_xml中提取出一个varName，就返回1，否则返回0
     def isVarName(unstructured_xml):
+        if not unstructured_xml:
+            return 0
         if unstructured_xml[0][1] == 'identifier':
             return 1
-        return -1
+        return 0
     
 
 class SubroutineCallHandler(BaseHandler):
@@ -97,12 +109,14 @@ class SubroutineCallHandler(BaseHandler):
             self.xml += common_convert('symbol')(')')+ "\n"
 
     def isSubroutineCall(unstructured_xml):
+        if not unstructured_xml:
+            return 0
         # 1. 处理 subroutineName ( expressionList )
         if VarNameHandler.isVarName(unstructured_xml[0:1]) \
             and unstructured_xml[1][0] == '(':
             expressionList_end_index = ExpressionListHandler.isExpressionList(unstructured_xml[2:])
-            if expressionList_end_index == -1 or unstructured_xml[expressionList_end_index+2][0] != ')':
-                return -1
+            if expressionList_end_index ==0  or unstructured_xml[expressionList_end_index+2][0] != ')':
+                return 0
             return expressionList_end_index+3
         # 2. 处理 className . subroutineName ( expressionList )
         elif VarNameHandler.isVarName(unstructured_xml[0:1]) \
@@ -110,10 +124,10 @@ class SubroutineCallHandler(BaseHandler):
             and VarNameHandler.isVarName(unstructured_xml[2:3]) \
             and unstructured_xml[3][0] == '(':
             expressionList_end_index = ExpressionListHandler.isExpressionList(unstructured_xml[4:])
-            if expressionList_end_index == -1 or unstructured_xml[expressionList_end_index+4][0] != ')':
-                return -1
+            if expressionList_end_index==0 or unstructured_xml[expressionList_end_index+4][0] != ')':
+                return 0
             return expressionList_end_index+5
-        return -1
+        return 0
 
 class TermHandler(BaseHandler):
     isTerminal = False
@@ -153,29 +167,31 @@ class TermHandler(BaseHandler):
         elif SubroutineCallHandler.isSubroutineCall(unstructured_xml):
             self.xml = SubroutineCallHandler(unstructured_xml).toXML()
 
-    # 如果能从unstructured_xml中提取出一个Term，就返回第一个诊断是Term的end_index, 否则返回-1
+    # 如果能从unstructured_xml中提取出一个Term，就返回第一个诊断是Term的end_index, 否则返回0
     def isTerm(unstructured_xml):
+        if not unstructured_xml:
+            return 0
         if unstructured_xml[0][1] in ['intConst','stringConst','keyword']:
             return 1
         elif VarNameHandler.isVarName(unstructured_xml):
             return 1
         elif unstructured_xml[0][0] in ['~','-']:
             if len(unstructured_xml) != 2 and not TermHandler.isTerm(unstructured_xml[1:]):
-                return -1
+                return 0
             return 1
         elif unstructured_xml[0][0] == '(':
             expression_end_index = ExpressionHandler.isExpression(unstructured_xml[1:])
-            if expression_end_index == -1 or unstructured_xml[expression_end_index+1][0] != ')':
-                return -1
+            if expression_end_index == 0 or unstructured_xml[expression_end_index+1][0] != ')':
+                return 0
             return expression_end_index+2
-        elif VarNameHandler.isVarName(unstructured_xml[0]) and unstructured_xml[1][0] == '[' and unstructured_xml[-1][0] == ']':
-            expression_end_index = ExpressionHandler.isExpression(unstructured_xml[2:-1])
-            if expression_end_index == -1 or unstructured_xml[expression_end_index+2][0] != ']':
-                return -1
+        elif VarNameHandler.isVarName(unstructured_xml[0]) and unstructured_xml[1][0] == '[':
+            expression_end_index = ExpressionHandler.isExpression(unstructured_xml[2:])
+            if expression_end_index == 0 or unstructured_xml[expression_end_index+2][0] != ']':
+                return 0
             return expression_end_index+3
         elif SubroutineCallHandler.isSubroutineCall(unstructured_xml):
             return SubroutineCallHandler.isSubroutineCall(unstructured_xml)
-        return -1
+        return 0
         
 class ExpressionListHandler(BaseHandler):
     isTerminal = False
@@ -208,8 +224,8 @@ class ExpressionListHandler(BaseHandler):
             nonlocal end_index
             tmp_end_index = 0
             expression_end_index = ExpressionHandler.isExpression(xml_need_check)
-            if expression_end_index != -1:
-                expression_end_index += expression_end_index
+            if expression_end_index != 0:
+                tmp_end_index += expression_end_index
                 end_index += expression_end_index
                 if xml_need_check[expression_end_index][0] == ',':
                     end_index += 1
@@ -218,9 +234,16 @@ class ExpressionListHandler(BaseHandler):
             else:
                 return
         
-        seqence_check(unstructured_xml)
+        if not unstructured_xml:
+            return 0
+
+        if unstructured_xml[0][0] == ')':
+            return 0
+        else:
+            seqence_check(unstructured_xml)
+
         if end_index == 0:
-            return -1
+            return 0
         return end_index
 
 class ExpressionHandler(BaseHandler):
@@ -233,7 +256,7 @@ class ExpressionHandler(BaseHandler):
             self.xml = TermHandler(unstructured_xml).toXML()
         # 2. 如果unstructured_xml 长度大于1，可能是 term 
 
-    # 如果能从unstructured_xml中提取出一个expression，就返回第一个诊断是expression的end_index, 否则返回-1
+    # 如果能从unstructured_xml中提取出一个expression，就返回第一个诊断是expression的end_index, 否则返回0
     def isExpression(unstructured_xml):
         end_index = 0
 
@@ -242,8 +265,8 @@ class ExpressionHandler(BaseHandler):
             nonlocal end_index
             tmp_end_index = 0
             term_end_index = TermHandler.isTerm(xml_need_check)
-            if term_end_index != -1:
-                term_end_index += term_end_index
+            if term_end_index != 0:
+                tmp_end_index += term_end_index
                 end_index += term_end_index
                 if OpHandler.isOp(xml_need_check[term_end_index:]):
                     end_index += 1
@@ -251,19 +274,20 @@ class ExpressionHandler(BaseHandler):
                     seqence_check(xml_need_check[tmp_end_index:])
             else:
                 return
+        if not unstructured_xml:
+            return 0
 
         seqence_check(unstructured_xml)
         
         if end_index == 0:
-            return -1
+            return 0
         return end_index
 
 if __name__ == "__main__":
 
     def handler_test(handler,unstructured_xml,answer_xml):
         handler.processXML(unstructured_xml)
-        print(handler.toXML())
-        assert handler.toXML() == answer_xml
+        assert handler.toXML() == answer_xml, "result:{0} \n answer: {1}".format(handler.toXML(),answer_xml)
 
     # 1. 单元测试: KeywordConstantHandler
     # 1.1 单元测试: KeywordConstantHandler.isKeywordConstant
@@ -292,22 +316,22 @@ if __name__ == "__main__":
     assert VarNameHandler.isVarName(unstructured_xml) == 1
     # 4.2 单元测试: VarNameHandler.processXML
     unstructured_xml = [('varName_1','identifier')]
-    handler_test(VarNameHandler(),unstructured_xml,'<identifier> varName </identifier>')
+    handler_test(VarNameHandler(),unstructured_xml,'<identifier> varName_1 </identifier>')
     # 5. 单元测试: SubroutineCallHandler
     # 5.1 单元测试: SubroutineCallHandler.isSubroutineCall
-    # 5.1.1 单元测试: SubroutineCallHandler.isSubroutineCall: subroutineName ( expressionList )
-    unstructured_xml = [('varName_1','identifier'),('(','symbol'),(')','symbol')]
-    assert SubroutineCallHandler.isSubroutineCall(unstructured_xml) == 3
+    # 5.1.1 单元测试: SubroutineCallHandler.isSubroutineCall: subroutineName ( expressionList ) something wrong
+    # unstructured_xml = [('varName_1','identifier'),('(','symbol'),(')','symbol')]
+    # assert SubroutineCallHandler.isSubroutineCall(unstructured_xml) == 3
     unstructured_xml = [('varName_1','identifier'),('(','symbol'),('expression_1','intConst'),(')','symbol')]
-    assert SubroutineCallHandler.isSubroutineCall(unstructured_xml) == 5
-    unstructured_xml = [('varName_1','identifier'),('(','symbol'),('expression_1','intConst'),('expression_2','intConst'),(')','symbol')]
-    assert SubroutineCallHandler.isSubroutineCall(unstructured_xml) == 7
+    assert SubroutineCallHandler.isSubroutineCall(unstructured_xml) == 4
+    unstructured_xml = [('varName_1','identifier'),('(','symbol'),('expression_1','intConst'),(',','symbol'),('expression_2','intConst'),(')','symbol')]
+    assert SubroutineCallHandler.isSubroutineCall(unstructured_xml) == 6
     # 5.1.2 单元测试: SubroutineCallHandler.isSubroutineCall: className . subroutineName ( expressionList )
     unstructured_xml = [('varName_1','identifier'),('.','symbol'),('varName_2','identifier'),('(','symbol'),(')','symbol')]
     assert SubroutineCallHandler.isSubroutineCall(unstructured_xml) == 5
     # 5.1.3 单元测试: SubroutineCallHandler.isSubroutineCall: Sys.Main(5,"print something")
     unstructured_xml = [('Sys','identifier'),('.','symbol'),('Main','identifier'),('(','symbol'),('5','intConst'),('print something','stringConst'),(')','symbol')]
-    assert SubroutineCallHandler.isSubroutineCall(unstructured_xml) == 9
+    assert SubroutineCallHandler.isSubroutineCall(unstructured_xml) == 8
     # 5.1.4 单元测试: SubroutineCallHandler.isSubroutineCall: Sys.Main(5,"prompt",(a+b+(5)))
     unstructured_xml = [('Sys','identifier'),('.','symbol'),('Main','identifier'),('(','symbol'),('5','intConst'),('prompt','stringConst'),('(','symbol'),('(','symbol'),('a','identifier'),('+','symbol'),('b','identifier'),('(','symbol'),('5','intConst'),(')','symbol'),(')','symbol'),(')','symbol')]
     assert SubroutineCallHandler.isSubroutineCall(unstructured_xml) == 19
@@ -344,6 +368,9 @@ if __name__ == "__main__":
     # 6.1.5 单元测试：TermHandler.isTerm: (~((3+4)=(5+6)))
     unstructured_xml = [('[','symbol'),('~','symbol'),('(','symbol'),('(','symbol'),('3','intConst'),('+','symbol'),('4','intConst'),(')','symbol'),('=','symbol'),('(','symbol'),('5','intConst'),('+','symbol'),('6','intConst'),(')','symbol'),(')','symbol'),']','symbol']
     assert TermHandler.isTerm(unstructured_xml) == 20
+    # 6.1.6 单元测试：TermHandler.isTerm: AAA[~((3+4)=(5+6))]
+    unstructured_xml = [('AAA','identifier'),('[','symbol'),('~','symbol'),('(','symbol'),('(','symbol'),('3','intConst'),('+','symbol'),('4','intConst'),(')','symbol'),('=','symbol'),('(','symbol'),('5','intConst'),('+','symbol'),('6','intConst'),(')','symbol'),(')','symbol'),']','symbol']
+    assert TermHandler.isTerm(unstructured_xml) == 21
     # 6.2 单元测试: TermHandler.processXML
     # 6.2.1 单元测试: TermHandler.processXML: intConst | stringConst
     unstructured_xml = [('3','intConst')]

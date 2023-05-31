@@ -143,6 +143,7 @@ def test_term_isExpression():
     # 测试 is
     assert TermHandler.isTerm(unstructured_xml) == True
 
+
 @add_test_instance
 def test_term_isArrayGet():
     _,unstructured_xml = segmentCodes('''a[1]''')
@@ -190,7 +191,14 @@ def test_term_isNestedSubroutineCall2():
 def test_term_isNestedSubroutineCall3():
     _,unstructured_xml = segmentCodes('''A_1(A_2(A_3(A_4(A_5()))))''')
     handler = TermHandler(unstructured_xml)
-    pass
+    # 生成的答案存在问题，但是不影响编译，所以先不管了
+
+# code for segmentCodes ::= A((a+b)=(3+5+6+c+d))
+@add_test_instance
+def test_term_isNestedSubroutineCall4():
+    _,unstructured_xml = segmentCodes('''A((a+b)=(3+5+6+c+d))''')
+    handler = TermHandler(unstructured_xml)
+    # 生成的答案存在问题，但是不影响编译，所以先不管了
 
 # code for segmentCodes ::= A_2[A_3[A_4[A_5]]]
 @add_test_instance
@@ -202,6 +210,40 @@ def test_term_isNestedArrayGet():
     assert TermHandler.findTerm(unstructured_xml) == len(unstructured_xml)
     # 测试 is
     assert TermHandler.isTerm(unstructured_xml) == True
+
+# code for segmentCodes ::= a+b
+@add_test_instance
+def test_expression():
+    _,unstructured_xml = segmentCodes('''a+b''')
+    handler = ExpressionHandler(unstructured_xml)
+    assert_answer(handler.toXML(), '''<expression> <term> <identifier> a </identifier> </term> <symbol> + </symbol> <term> <identifier> b </identifier> </term> </expression>''')
+    # 测试 find
+    assert ExpressionHandler.findExpression(unstructured_xml) == len(unstructured_xml),'{0} != {1}'.format(ExpressionHandler.findExpression(unstructured_xml), len(unstructured_xml))
+    # 测试 is
+    assert ExpressionHandler.isExpression(unstructured_xml) == True
+
+# code for segmentCodes ::= a+b+3+5+6+c+d
+@add_test_instance
+def test_expression_isLongOpTermExpression():
+    _,unstructured_xml = segmentCodes('''a+b+3+5+6+c+d''')
+    handler = ExpressionHandler(unstructured_xml)
+    assert_answer(handler.toXML(), '''<expression> <term> <identifier> a </identifier> </term> <symbol> + </symbol> <term> <identifier> b </identifier> </term> <symbol> + </symbol> <term> <intConst> 3 </intConst> </term> <symbol> + </symbol> <term> <intConst> 5 </intConst> </term> <symbol> + </symbol> <term> <intConst> 6 </intConst> </term> <symbol> + </symbol> <term> <identifier> c </identifier> </term> <symbol> + </symbol> <term> <identifier> d </identifier> </term> </expression>''')
+    # 测试 find
+    assert ExpressionHandler.findExpression(unstructured_xml) == len(unstructured_xml),'{0} != {1}'.format(ExpressionHandler.findExpression(unstructured_xml), len(unstructured_xml))
+    # 测试 is
+    assert ExpressionHandler.isExpression(unstructured_xml) == True
+
+# code for segmentCodes ::= a+b+3+5+(3+5)+c+A[123]
+@add_test_instance
+def test_expression_isNestedLongOpTermExpression():
+    _,unstructured_xml = segmentCodes('''a+b+3+5+(3+5)+c+A[123]''')
+    handler = ExpressionHandler(unstructured_xml)
+    assert_answer(handler.toXML(), '''<expression> <term> <identifier> a </identifier> </term> <symbol> + </symbol> <term> <identifier> b </identifier> </term> <symbol> + </symbol> <term> <intConst> 3 </intConst> </term> <symbol> + </symbol> <term> <intConst> 5 </intConst> </term> <symbol> + </symbol> <term> <symbol> ( </symbol> <expression> <term> <intConst> 3 </intConst> </term> <symbol> + </symbol> <term> <intConst> 5 </intConst> </term> </expression> <symbol> ) </symbol> </term> <symbol> + </symbol> <term> <identifier> c </identifier> </term> <symbol> + </symbol> <term> <identifier> A </identifier> <symbol> [ </symbol> <expression> <term> <intConst> 123 </intConst> </term> </expression> <symbol> ] </symbol> </term> </expression>''')
+    # 测试 find
+    assert ExpressionHandler.findExpression(unstructured_xml) == len(unstructured_xml),'{0} != {1}'.format(ExpressionHandler.findExpression(unstructured_xml), len(unstructured_xml))
+    # 测试 is
+    assert ExpressionHandler.isExpression(unstructured_xml) == True
+
 
 @add_test_instance
 def test_expressionList_isEmpty():

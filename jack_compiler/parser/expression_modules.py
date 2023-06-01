@@ -43,7 +43,7 @@ class ConstantHandler(SimpleHandler):
         else:
             return -1
         
-class UnaryOpHandler(BaseHandler):
+class UnaryOpHandler(SimpleHandler):
     isTerminal = True
     label = 'unaryOp'
     
@@ -55,101 +55,155 @@ class UnaryOpHandler(BaseHandler):
         else:
             return -1
 
-class ExpressionHandler(SequenceHandler):
-    isTerminal = False
-    label = 'expression'
 
-    def __init__(self, unstructed_xml=None):
-        self.check_chain = [
-            ('isMultiOpTerm', MultiUnitHandler(TermHandler(None),[OpHandler(None),TermHandler(None)]))
-        ]
-        self.valid_num = [1]
-        super().__init__(unstructed_xml)
-
-# wait for later TODO
 class ExpressionListHandler(SelectHandler):
     isTerminal = False
     label = 'expressionList'
-
-    def __init__(self, unstructed_xml=None):
-        self.candidates = {
-            'isEmpty': EmptyHandler(),
-            'isMultiExpression': MultiUnitHandler(ExpressionHandler(),[SupportHandler((',' , 'symbol')),ExpressionHandler()])
-        }
-        super().__init__(unstructed_xml)
+    
+    @property
+    def candidates(self):
+        if not hasattr(self, '_candidates'):
+            self._candidates = {
+                'isEmpty': EmptyHandler(),
+                'isMultiExpression': MultiUnitHandler(ExpressionHandler(),[SupportHandler((',' , 'symbol')),ExpressionHandler()])
+            }
+        return self._candidates
+    
+    def findTarget(self, unstructured_xml):
+        if not unstructured_xml:
+            return 0
+        return SelectHandler.findTarget(self, unstructured_xml)
+class ExpressionHandler(SequenceHandler):
+    isTerminal = False
+    label = 'expression'
+    
+    @property
+    def check_chain(self):
+        if not hasattr(self, '_check_chain'):
+            self._check_chain = [
+                ('isMultiOpTerm', MultiUnitHandler(TermHandler(None),[OpHandler(None),TermHandler(None)]))
+            ]
+        return self._check_chain
+    
+    @property
+    def valid_num(self):
+        if not hasattr(self, '_valid_num'):
+            self._valid_num = [1]
+        return self._valid_num
 
 class PureFunctionCallHandler(SequenceHandler):
     isTerminal = True
     label = 'subroutineCall'
 
-    def __init__(self, unstructed_xml=None):
-        self.check_chain = [
-            ('varName',VarNameHandler()),
-            ('(',SupportHandler(('(', 'symbol'))),
-            ('expressionList',ExpressionListHandler()),
-            (')',SupportHandler((')', 'symbol')))
-        ]
-        self.valid_num = [4]
-        super().__init__(unstructed_xml)
+    @property
+    def check_chain(self):
+        if not hasattr(self, '_check_chain'):
+            self._check_chain = [
+                ('varName',VarNameHandler()),
+                ('(',SupportHandler(('(', 'symbol'))),
+                ('expressionList',ExpressionListHandler()),
+                (')',SupportHandler((')', 'symbol')))
+            ]
+        return self._check_chain
+    
+    @property
+    def valid_num(self):
+        if not hasattr(self, '_valid_num'):
+            self._valid_num = [4]
+        return self._valid_num
 
 class ClassFunctionCallHandler(SequenceHandler):
     isTerminal = True
     label = 'subroutineCall'
-
-    def __init__(self, unstructed_xml=None):
-        self.check_chain = [
-            ('varName',VarNameHandler()),
-            ('.',SupportHandler(('.', 'symbol'))),
-            ('varName',VarNameHandler()),
-            ('(',SupportHandler(('(', 'symbol'))),
-            ('expressionList',ExpressionListHandler()),
-            (')',SupportHandler((')', 'symbol')))
-        ]
-        self.valid_num = [6]
-        super().__init__(unstructed_xml)
+    
+    @property
+    def check_chain(self):
+        if not hasattr(self, '_check_chain'):
+            self._check_chain = [
+                ('varName',VarNameHandler()),
+                ('.',SupportHandler(('.', 'symbol'))),
+                ('varName',VarNameHandler()),
+                ('(',SupportHandler(('(', 'symbol'))),
+                ('expressionList',ExpressionListHandler()),
+                (')',SupportHandler((')', 'symbol')))
+            ]
+        return self._check_chain
+    
+    @property
+    def valid_num(self):
+        if not hasattr(self, '_valid_num'):
+            self._valid_num = [6]
+        return self._valid_num
 
 class TermExpressionHandler(SequenceHandler):
-    isTerminal = False
+    isTerminal = True
     label = 'term'
 
-    def __init__(self, unstructed_xml=None):
-        self.check_chain = [
-            ('(',SupportHandler(('(', 'symbol'))),
-            ('expression',ExpressionHandler()),
-            (')',SupportHandler((')', 'symbol')))
-        ]
-        super().__init__(unstructed_xml)
+    @property
+    def valid_num(self):
+        if not hasattr(self, '_valid_num'):
+            self._valid_num = [3]
+        return self._valid_num
+    
+    @property
+    def check_chain(self):
+        if not hasattr(self, '_check_chain'):
+            self._check_chain = [
+                ('(',SupportHandler(('(', 'symbol'))),
+                ('expression',ExpressionHandler()),
+                (')',SupportHandler((')', 'symbol')))
+            ]
+        return self._check_chain
+    
 
 class ArrayGetHandler(SequenceHandler):
-    isTerminal = False
+    isTerminal = True
     label = 'term'
 
-    def __init__(self, unstructed_xml=None):
-        self.check_chain = [
-            ('varName',VarNameHandler()),
-            ('[',SupportHandler(('[', 'symbol'))),
-            ('expression',ExpressionHandler()),
-            (']',SupportHandler((']', 'symbol')))
-        ]
-        super().__init__(unstructed_xml)
+    @property
+    def valid_num(self):
+        if not hasattr(self, '_valid_num'):
+            self._valid_num = [4]
+        return self._valid_num
+    
+    @property
+    def check_chain(self):
+        if not hasattr(self, '_check_chain'):
+            self._check_chain = [
+                ('varName',VarNameHandler()),
+                ('[',SupportHandler(('[', 'symbol'))),
+                ('expression',ExpressionHandler()),
+                (']',SupportHandler((']', 'symbol')))
+            ]
+        return self._check_chain
 
 class UnaryOpTermHandler(SequenceHandler):
-    isTerminal = False
+    isTerminal = True
     label = 'term'
 
-    def __init__(self, unstructed_xml=None):
-        self.check_chain = [
-            ('unaryOp',UnaryOpHandler()),
-            ('term',TermHandler())
-        ]
-        super().__init__(unstructed_xml)
-
+    @property
+    def valid_num(self):
+        if not hasattr(self, '_valid_num'):
+            self._valid_num = [2]
+        return self._valid_num
+    
+    @property
+    def check_chain(self):
+        if not hasattr(self, '_check_chain'):
+            self._check_chain = [
+                ('unaryOp',UnaryOpHandler()),
+                ('term',TermHandler())
+            ]
+        return self._check_chain
+    
 class TermHandler(SelectHandler):
     isTerminal = False
     label = 'term'
 
-    def __init__(self, unstructured_xml):
-        self.candidates = {
+    @property
+    def candidates(self):
+        if not hasattr(self, '_candidates'):
+            self._candidates = {
                 'isConstant':  ConstantHandler(),
                 'isName': VarNameHandler(),
                 'isKeywordConstant': KeywordConstantHandler(),
@@ -157,8 +211,7 @@ class TermHandler(SelectHandler):
                 'isClassFunctionCall': ClassFunctionCallHandler(),
                 'isExpression': TermExpressionHandler(),
                 'isArrayGet': ArrayGetHandler(),
-                'isUnaryOpTerm': UnaryOpHandler(),
-        }
-
-        BaseHandler.__init__(self, unstructured_xml)
+                'isUnaryOpTerm': UnaryOpTermHandler(),
+            }
+        return self._candidates
 

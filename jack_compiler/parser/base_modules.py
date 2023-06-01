@@ -42,6 +42,7 @@ class SimpleHandler(BaseHandler):
     label = 'simple'
 
     def processXML(self, unstructured_xml):
+        self.xml = ''
         if not len(unstructured_xml) == 1:
             raise BaseException("simple handler only process one word")
         if self.isTarget(unstructured_xml):
@@ -57,8 +58,8 @@ class SupportHandler(SimpleHandler):
     def __init__(self, target_word_and_type):
         if not target_word_and_type or not isinstance(target_word_and_type, tuple) or len(target_word_and_type) != 2:
             raise BaseException('SupportHandler must have one word and type and input must be tuple')
-        super().__init__([target_word_and_type])
         self.target_word_and_type = target_word_and_type
+        super().__init__([target_word_and_type])
 
     def findTarget(self, unstructured_xml):
         if unstructured_xml and unstructured_xml[0] == self.target_word_and_type:
@@ -70,7 +71,8 @@ class NameHandler(BaseHandler):
     label = 'name'
 
     def processXML(self, unstructured_xml):
-        if NameHandler.isTarget(unstructured_xml):
+        self.xml = ''
+        if self.isTarget(unstructured_xml):
             self.xml += common_convert('identifier')(unstructured_xml[0][0])
             return self.toXML()
         else:
@@ -80,7 +82,7 @@ class NameHandler(BaseHandler):
         if not unstructured_xml:
             return -1
         if unstructured_xml[0][1] == 'identifier':
-            return True
+            return 1
         return -1
 
 # 这是个辅助的handler 用于处理多种重复的情况
@@ -94,15 +96,20 @@ class MultiUnitHandler(BaseHandler):
         super().__init__(unstructed_xml)
     
     def processXML(self, unstructured_xml):
+        self.xml = ''
         if self.isTarget(unstructured_xml):
             find_length = 0
             if self.base_handler:
                 find_length = self.findBaseTarget(unstructured_xml)
                 self.xml = self.base_handler.processXML(unstructured_xml[:find_length])
-            for handler in self.options_handlers:
-                unit_length = handler.findTarget(unstructured_xml[find_length:])
-                self.xml += handler.processXML(unstructured_xml[find_length:find_length+unit_length])
-                find_length += unit_length
+                if find_length == len(unstructured_xml):
+                    return self.toXML()
+            left_xml = unstructured_xml[find_length:]
+            while left_xml:
+                for handler in self.options_handlers:
+                    unit_length = handler.findTarget(left_xml)
+                    self.xml += handler.processXML(left_xml[:unit_length])
+                    left_xml = left_xml[unit_length:]
             return self.toXML()
         else:
             raise BaseException("MultiUnitHandler: unstructured_xml is not a multi unit")
@@ -132,12 +139,14 @@ class MultiUnitHandler(BaseHandler):
         if not unstructured_xml:
             return -1
         find_length = 0
+        left_xml = unstructured_xml
         for handler in self.options_handlers:
-            unit_length = handler.findTarget(unstructured_xml)
+            unit_length = handler.findTarget(left_xml)
             if unit_length <0:
                 return -1
             find_length += unit_length
-        next_find_length = self.findOptionTarget(unstructured_xml[find_length:])
+            left_xml = left_xml[unit_length:]
+        next_find_length = self.findOptionTarget(left_xml)
         return find_length if next_find_length < 0 else find_length + next_find_length
     
 class EmptyHandler(BaseHandler):
@@ -148,6 +157,7 @@ class EmptyHandler(BaseHandler):
         self.xml = ''
 
     def processXML(self, unstructured_xml):
+        self.xml = '' 
         return self.toXML()
 
     def toXML(self):
@@ -198,11 +208,12 @@ class SequenceHandler(BaseHandler):
                     unstructured_xml = unstructured_xml[find_length:]
                 else:
                     break
+            return self.toXML()
         else:
             raise BaseException("SequenceHandler: unstructured_xml is not a unit")
 
     def findTarget(self,unstructured_xml):
-        find_flag = check_chain_with_func_list(unstructured_xml, [ find_function for _,find_function,_ in self.check_chain])
+        find_flag = check_chain_with_func_list(unstructured_xml, [ handler for item_name, handler in self.check_chain])
         # 如果 find_flag 中的 True 的个数不在 valid_num 中，返回 False
         if find_flag.count(True) not in self.valid_num:
             return -1
@@ -220,17 +231,20 @@ class SelectHandler(BaseHandler):
     isTerminal = False
     label = 'term'
 
-    def __init__(self, unstructured_xml):
-        self.candidates = {}
+    candiates = {}
+
+    def __init__(self, unstructured_xml=None):
         BaseHandler.__init__(self, unstructured_xml)
 
     def processXML(self, unstructured_xml):
         self.xml = ''
-        for handler in self.candidates.values():
-            if handler.isTarget(unstructured_xml):
-                self.xml = handler.processXML(unstructured_xml)
-                return self.toXML()
-        raise BaseException("something wrong with {0}".format(unstructured_xml))
+        if self.isTarget(unstructured_xml):
+            for handler in self.candidates.values():
+                if handler.isTarget(unstructured_xml):
+                    self.xml = handler.processXML(unstructured_xml)
+                    return self.toXML()
+        else:
+            raise BaseException("something wrong with {0}".format(unstructured_xml))
     
     # 如果能从unstructured_xml中提取出一个Term，就返回第一个诊断是Term的end_index, 否则返回0
     def isTarget(self,unstructured_xml):

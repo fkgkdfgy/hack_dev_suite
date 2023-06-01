@@ -139,3 +139,39 @@ class MultiUnitHandler(BaseHandler):
             find_length += unit_length
         next_find_length = self.findOptionUnits(unstructured_xml[find_length:])
         return find_length if next_find_length < 0 else find_length + next_find_length
+    
+class EmptyHandler(BaseHandler):
+    isTerminal = True
+    label = 'empty'
+
+    def __init__(self, unstructed_xml=None):
+        self.xml = ''
+
+    def processXML(self, unstructured_xml):
+        pass
+
+    def toXML(self):
+        return ''
+    
+    def isEmpty(unstructured_xml):
+        if not unstructured_xml:
+            return True
+        return False
+    
+    # 因为是找空白所以永远不可能失败
+    def findEmpty(unstructured_xml):
+        return 0
+    
+class OrHanlder(BaseHandler):
+    isTerminal = True
+    label = 'or'
+    def __init__(self, unit1, unit2, unstructed_xml=None):
+        self.unit1 = unit1
+        self.unit2 = unit2
+        super().__init__(unstructed_xml)
+
+    def findUnit():
+        pass
+
+    def isUnit():
+        pass

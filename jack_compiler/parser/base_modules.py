@@ -37,13 +37,33 @@ class BaseHandler:
             return True
         return False
 
-class SupportHandler(BaseHandler):
+class SimpleHandler(BaseHandler):
+    isTerminal = True
+    label = 'simple'
+
+    def processXML(self, unstructured_xml):
+        if not len(unstructured_xml) == 1:
+            raise BaseException("simple handler only process one word")
+        if self.isTarget(unstructured_xml):
+            self.xml = common_convert(unstructured_xml[0][1])(unstructured_xml[0][0])
+            return self.toXML()
+        else:
+            raise BaseException("something wrong with {0}".format(unstructured_xml))
+
+class SupportHandler(SimpleHandler):
     isTerminal = True
     label = 'support'
 
-    def processXML(self, word_and_type):
-        self.xml = common_convert(word_and_type[1])(word_and_type[0])
-        return self.toXML()
+    def __init__(self, target_word_and_type):
+        if not target_word_and_type or not isinstance(target_word_and_type, tuple) or len(target_word_and_type) != 2:
+            raise BaseException('SupportHandler must have one word and type and input must be tuple')
+        super().__init__([target_word_and_type])
+        self.target_word_and_type = target_word_and_type
+
+    def findTarget(self, unstructured_xml):
+        if unstructured_xml and unstructured_xml[0] == self.target_word_and_type:
+            return 1
+        return -1
 
 class NameHandler(BaseHandler):
     isTerminal = True
@@ -141,67 +161,14 @@ class EmptyHandler(BaseHandler):
     # 因为是找空白所以永远不可能失败
     def findTarget(self,unstructured_xml):
         return 0
-    
-class OrHanlder(BaseHandler):
-    isTerminal = True
-    label = 'or'
-    def __init__(self, handler1, handler2, unstructed_xml=None):
-        self.handler1 = handler1
-        self.handler2 = handler2
-        super().__init__(unstructed_xml)
 
-    def processXML(self, unstructured_xml):
-        self.xml = ''
-        if self.isTarget(unstructured_xml):
-            if self.isTarget1(unstructured_xml):
-                self.xml = self.handler1.processXML(unstructured_xml)
-            else:
-                self.xml = self.handler2.processXML(unstructured_xml)
-            return self.toXML()
-        else:
-            raise BaseException("OrHandler: unstructured_xml is not a unit")
-
-    def isTarget1(self,unstructured_xml):
-        if self.handler1.isTarget(unstructured_xml):
-            return True
-        return False
-
-    def isTarget2(self,unstructured_xml):
-        if self.handler2.isTarget(unstructured_xml):
-            return True
-        return False
-
-    def isTarget(self,unstructured_xml):
-        if self.isTarget1(unstructured_xml) and self.isTarget2(unstructured_xml):
-            raise BaseException("OrHandler: find two units")
-        if self.isTarget1(unstructured_xml) or self.isTarget2(unstructured_xml):
-            return True
-        return False
-
-    def findTarget1(self,unstructured_xml):
-        return self.handler1.findTarget(unstructured_xml)
-
-    def findTarget2(self,unstructured_xml):
-        return self.handler2.findTarget(unstructured_xml)
-    
-    def findTarget(self,unstructured_xml):
-        find_length1 = self.findTarget1(unstructured_xml)
-        find_length2 = self.findTarget2(unstructured_xml)
-        if find_length1 < 0 and find_length2 < 0:
-            return -1
-        if find_length1 > 0 and find_length2 > 0:
-            raise BaseException("OrHandler: find two units")
-        if find_length1 < 0:
-            return find_length2
-        if find_length2 < 0:
-            return find_length1
-
-def check_chain_with_func_list(left_xml, func_list):
-    find_flag = [False] * len(func_list)
-    if not func_list:
+def check_chain_with_func_list(left_xml, handler_list):
+    find_flag = [False] * len(handler_list)
+    if not handler_list:
         raise BaseException('check_chain must have at least one function')
-    for index,func in enumerate(func_list):
-        find_length = func(left_xml)
+    
+    for index,handler in enumerate(handler_list):
+        find_length = handler.findTarget(left_xml)
         if find_length >=0:
             left_xml = left_xml[find_length:]
             find_flag[index] = True
@@ -212,6 +179,7 @@ def check_chain_with_func_list(left_xml, func_list):
 
 class SequenceHandler(BaseHandler):
 
+    # check_chain 内部是多个handler
     check_chain = []
     valid_num = []
 
@@ -221,12 +189,12 @@ class SequenceHandler(BaseHandler):
     def processXML(self, unstructured_xml):
         self.xml = ''
         if self.isTarget(unstructured_xml):
-            find_flag = check_chain_with_func_list(unstructured_xml, [ find_function for _,find_function,_ in self.check_chain])
+            find_flag = check_chain_with_func_list(unstructured_xml, [ handler for item_name, handler in self.check_chain])
             for index,function_pair in enumerate(self.check_chain):
-                item_name, find_function, process_function = function_pair
+                item_name, handler = function_pair
                 if find_flag[index]:
-                    find_length = find_function(unstructured_xml)
-                    self.xml += process_function(unstructured_xml[:find_length])
+                    find_length = handler.findTarget(unstructured_xml)
+                    self.xml += handler.processXML(unstructured_xml[:find_length])
                     unstructured_xml = unstructured_xml[find_length:]
                 else:
                     break
@@ -241,9 +209,40 @@ class SequenceHandler(BaseHandler):
         else:
             find_length = 0
             for index,function_pair in enumerate(self.check_chain):
-                item_name, find_function, process_function = function_pair
+                item_name, handler = function_pair
                 if find_flag[index]:
-                    find_length += find_function(unstructured_xml[find_length:])
+                    find_length += handler.findTarget(unstructured_xml[find_length:])
                 else:
                     break
             return find_length   
+        
+class SelectHandler(BaseHandler):
+    isTerminal = False
+    label = 'term'
+
+    def __init__(self, unstructured_xml):
+        self.candidates = {}
+        BaseHandler.__init__(self, unstructured_xml)
+
+    def processXML(self, unstructured_xml):
+        self.xml = ''
+        for handler in self.candidates.values():
+            if handler.isTarget(unstructured_xml):
+                self.xml = handler.processXML(unstructured_xml)
+                return self.toXML()
+        raise BaseException("something wrong with {0}".format(unstructured_xml))
+    
+    # 如果能从unstructured_xml中提取出一个Term，就返回第一个诊断是Term的end_index, 否则返回0
+    def isTarget(self,unstructured_xml):
+        for handler in self.candidates.values():
+            if handler.isTarget(unstructured_xml):
+                return True
+        return False
+    
+    def findTarget(self,unstructured_xml):
+        if not unstructured_xml:
+            return -1
+        for i in range(len(unstructured_xml)+1)[::-1]:
+            if self.isTarget(unstructured_xml[0:i]):
+                return i
+        return -1    

@@ -29,5 +29,15 @@ class BaseHandler:
 class PsedoHandler(BaseHandler):
     isTerminal = True
     label = 'psedo'
+
+    def processXML(self, word_and_type):
+        self.xml = common_convert(word_and_type[1])(word_and_type[0])
+
+
+
+class SupportHandler(BaseHandler):
+    isTerminal = True
+    label = 'support'
+
     def processXML(self, word_and_type):
         self.xml = common_convert(word_and_type[1])(word_and_type[0])

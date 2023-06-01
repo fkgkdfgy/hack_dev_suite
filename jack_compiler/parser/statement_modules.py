@@ -4,6 +4,47 @@ from expression_modules import *
 class StatementException(Exception):
     pass
 
+def check_chain(left_xml, func_list):
+    if not func_list:
+        raise StatementException('check_chain must have at least one function')
+    for func in func_list:
+        find_length = func(left_xml)
+        if find_length >=0:
+            left_xml = left_xml[find_length:]
+        else:
+            break
+    if not left_xml:
+        return True
+    return False
+
+# 主要用于帮助处理chain_check ,所以这个特殊的handler有一些奇怪的地方
+
+class SupportHandler(BaseHandler):
+    isTerminal = True
+    label = 'support'
+
+    def __init__(self, target_word_and_type):
+        if not target_word_and_type or len(target_word_and_type) != 1:
+            raise StatementException('SupportHandler must have one word and type')
+        super().__init__(target_word_and_type)
+        self.target_word_and_type = target_word_and_type
+
+    def processXML(self, word_and_type):
+        self.xml = common_convert(word_and_type[1])(word_and_type[0])
+
+    def isTarget(self, word_and_type):
+        # 如果进来的word_and_type 不是tuple 或者长度不满足要求 直接报错
+        if not isinstance(word_and_type, tuple) or len(word_and_type) != 2:
+            raise StatementException('SupportHandler.isTarget must have one word and type')
+        if word_and_type == self.target_word_and_type:
+            return True
+        return False   
+    
+    def findTarget(self, unstructured_xml):
+        if unstructured_xml and self.isTarget(unstructured_xml[0]):
+            return 1
+        return -1
+
 class StatementKeywordHandler(BaseHandler):
     isTerminal = True
     label = 'statementkeyword'
@@ -20,85 +61,44 @@ class LetStatementHandler(BaseHandler):
     isTerminal = False
     label = 'letStatement'
 
-    def processXML(self, unstructured_xml):
-        if LetStatementHandler.isLetStatement(unstructured_xml):
-            self.xml += StatementKeywordHandler(unstructured_xml[0]).toXML()
-            self.xml += VarNameHandler(unstructured_xml[1:2]).toXML()
-            self.xml += common_convert(unstructured_xml[2][1])(unstructured_xml[2][0])
-            self.xml += ExpressionHandler(unstructured_xml[3:-1]).toXML()
-            self.xml += common_convert(unstructured_xml[-1][1])(unstructured_xml[-1][0])
-        else:
-            raise StatementException('Not a valid letStatement: {0}'.format(unstructured_xml))
+    check_chain = {
+        'let': (SupportHandler(('let', 'keyword')).findTarget, lambda x: SupportHandler(('let', 'keyword')).toXML()),
+        'varName': (VarNameHandler.isVarName, lambda x: VarNameHandler(x).toXML()),
+        '=': (SupportHandler(('=', 'symbol')).findTarget, lambda x: SupportHandler(('=', 'symbol')).toXML()),
+        'expression': (ExpressionHandler.isExpression, lambda x: ExpressionHandler(x).toXML()),
+        ';': (SupportHandler((';', 'symbol')).findTarget, lambda x: SupportHandler((';', 'symbol')).toXML())
+    }
 
-    # 如果要判断一个statement 是letStatement，那么必须要满足以下条件：
-    # 1. 第一个word是let
-    # 2. 第二个word是varName
-    # 3. 第三个word是'='
-    # 4. 第四个word是expression
-    # 5. 第五个word是';'
+    def processXML(self, unstructured_xml):
+        self.xml = ''
+        for check_name, (check_function, convert_function) in LetStatementHandler.check_chain.items():
+            find_length = check_function(unstructured_xml)
+            if find_length >= 0:
+                self.xml += convert_function(unstructured_xml[:find_length])
+                unstructured_xml = unstructured_xml[find_length:]
+            else:
+                raise StatementException('LetStatementHandler.processXML error: {0} not found'.format(check_name))
+
     @common_empty_check
     def isLetStatement(unstructured_xml):
-        if len(unstructured_xml) < 5:
-            return False
-        if unstructured_xml[0][0] == 'let' and \
-            VarNameHandler.isvarName(unstructured_xml[1:2]) and \
-            unstructured_xml[2][0] == '=' and \
-            ExpressionHandler.isExpression(unstructured_xml[3:-1]) and \
-            unstructured_xml[-1][0] == ';':
-            return True
-        return False
-    
+        return check_chain(unstructured_xml,[ check_function for check_function,_ in LetStatementHandler.check_chain.values()])
+
     def findletStatement(unstructured_xml):
-        if not unstructured_xml:
-            return -1
-        for i in range(len(unstructured_xml)+1)[::-1]:
-            if LetStatementHandler.isLetStatement(unstructured_xml[:i]):
-                return i
-        return -1
+        pass
 
 class ifStatementHandler(BaseHandler):
     isTerminal = False
     label = 'ifStatement'
 
     def processXML(self, unstructured_xml):
-        if ifStatementHandler.isifStatement(unstructured_xml):
-            self.xml += StatementKeywordHandler(unstructured_xml[0]).toXML()
-            self.xml += common_convert(unstructured_xml[1][1])(unstructured_xml[1][0])
-            self.xml += ExpressionHandler(unstructured_xml[2:-2]).toXML()
-            self.xml += common_convert(unstructured_xml[-2][1])(unstructured_xml[-2][0])
-            self.xml += StatementHandler(unstructured_xml[-1]).toXML()
-        else:
-            raise StatementException('Not a valid ifStatement: {0}'.format(unstructured_xml))
+        pass
 
-    # 如果要判断一个statement 是ifStatement，那么必须要满足以下条件：
-    # 1. 第一个word是if
-    # 2. 第二个word是'('
-    # 3. 第三个word是expression
-    # 4. 第四个word是')'
-    # 5. 第五个word是'{'
-    # 6. 第六个word是statements
-    # 7. 第七个word是'}'
     @common_empty_check
     def isifStatement(unstructured_xml):
-        if len(unstructured_xml) < 7:
-            return False
-        if unstructured_xml[0][0] == 'if' and \
-            unstructured_xml[1][0] == '(' and \
-            ExpressionHandler.isExpression(unstructured_xml[2:-2]) and \
-            unstructured_xml[-2][0] == ')' and \
-            unstructured_xml[-1][0] == '{' and \
-            StatementHandler.isStatement(unstructured_xml[-1][1:-1]) and \
-            unstructured_xml[-1][-1][0] == '}':
-            return True
-        return False
-    
+        pass
+
     def findifStatement(unstructured_xml):
-        if not unstructured_xml:
-            return -1
-        for i in range(len(unstructured_xml)+1)[::-1]:
-            if ifStatementHandler.isifStatement(unstructured_xml[:i]):
-                return i
-        return -1
+        pass
 
 
 class StatementHandler(BaseHandler):    
@@ -131,4 +131,11 @@ class MultiStatementHandler(BaseHandler):
     label = 'statements'
 
     def processXML(self, unstructured_xml):
+        pass
+
+    @common_empty_check
+    def isMultiStatement(unstructured_xml):
+        pass
+
+    def findMultiStatement(unstructured_xml):
         pass

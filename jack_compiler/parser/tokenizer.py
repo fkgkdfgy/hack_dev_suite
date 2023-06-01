@@ -1,8 +1,6 @@
 
 from utils import *
 
-
-
 def isKeyword(word):
     return word in BuiltInKeywords
 

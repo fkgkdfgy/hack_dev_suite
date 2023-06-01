@@ -69,9 +69,9 @@ def test_varName():
     handler = VarNameHandler(unstructured_xml)
     assert_answer(handler.toXML(), '''<identifier> a </identifier>''')
     # 测试 find
-    assert VarNameHandler.findVarName(unstructured_xml) == len(unstructured_xml)
+    assert VarNameHandler.findName(unstructured_xml) == len(unstructured_xml)
     # 测试 is
-    assert VarNameHandler.isVarName(unstructured_xml) == True
+    assert VarNameHandler.isName(unstructured_xml) == True
 
 @add_test_instance
 def test_constant():

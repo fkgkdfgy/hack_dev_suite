@@ -4,31 +4,8 @@ from base_modules import *
 class ExpressionException(Exception):
     pass
 
-class VarNameHandler(BaseHandler):
-    isTerminal = True
+class VarNameHandler(NameHandler):
     label = 'varName'
-
-    def processXML(self, unstructured_xml):
-        # 1. 如果unstructured_xml 长度是1，且是 varName，就直接转化成XML
-        if VarNameHandler.isVarName(unstructured_xml):
-            self.xml = common_convert(unstructured_xml[0][1])(unstructured_xml[0][0])
-        else:
-            raise ExpressionException("something wrong with {0}".format(unstructured_xml))
-
-    # 如果能从unstructured_xml中提取出一个varName，就返回1，否则返回0
-    @common_empty_check
-    def isVarName(unstructured_xml):
-        if len(unstructured_xml) == 1 and unstructured_xml[0][1] == 'identifier':
-            return True
-        return False
-    
-    def findVarName(unstructured_xml):
-        if not unstructured_xml:
-            return -1
-        elif VarNameHandler.isVarName(unstructured_xml[0:1]):
-            return 1
-        else:
-            return -1
 
 class KeywordConstantHandler(BaseHandler):
     isTerminal = True
@@ -240,7 +217,7 @@ class ExpressionHandler(BaseHandler):
 
 @common_empty_check
 def isPureFunctionCall(unstructured_xml):
-    if VarNameHandler.isVarName(unstructured_xml[0:1])  \
+    if VarNameHandler.isName(unstructured_xml[0:1])  \
         and unstructured_xml[1][0] == '(' \
         and unstructured_xml[-1][0] == ')' \
         and ExpressionListHandler.isExpressionList(unstructured_xml[2:-1]):
@@ -249,9 +226,9 @@ def isPureFunctionCall(unstructured_xml):
 
 @common_empty_check
 def isMemberFunctionCall(unstructured_xml):
-    if VarNameHandler.isVarName(unstructured_xml[0:1])  \
+    if VarNameHandler.isName(unstructured_xml[0:1])  \
         and unstructured_xml[1][0] == '.' \
-        and VarNameHandler.isVarName(unstructured_xml[2:3]) \
+        and VarNameHandler.isName(unstructured_xml[2:3]) \
         and unstructured_xml[3][0] == '(' \
         and unstructured_xml[-1][0] == ')' \
         and ExpressionListHandler.isExpressionList(unstructured_xml[4:-1]):
@@ -339,7 +316,7 @@ def isUnaryOpTerm(unstructured_xml):
 # 对应varName[expression]
 @common_empty_check
 def isArrayGet(unstructured_xml):
-    if VarNameHandler.isVarName(unstructured_xml[0:1]) \
+    if VarNameHandler.isName(unstructured_xml[0:1]) \
         and unstructured_xml[1][0] == '[' \
         and unstructured_xml[-1][0] == ']' \
         and ExpressionHandler.isExpression(unstructured_xml[2:-1]):
@@ -357,7 +334,7 @@ class TermHandler(BaseHandler):
 
     check_function = {
             'isConstant':  (ConstantHandler.isConstant, lambda x: ConstantHandler(x).toXML()),
-            'isVarName': (VarNameHandler.isVarName, lambda x: VarNameHandler(x).toXML()),
+            'isName': (VarNameHandler.isName, lambda x: VarNameHandler(x).toXML()),
             'isKeywordConstant': (KeywordConstantHandler.isKeywordConstant, lambda x: KeywordConstantHandler(x).toXML()),
             'isSubroutineCall': (SubroutineCallHandler.isSubroutineCall, lambda x: SubroutineCallHandler(x).toXML()),
             'isExpression': (isExpression, lambda x: transformExpression(x)),

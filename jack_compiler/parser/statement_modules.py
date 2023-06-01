@@ -132,7 +132,7 @@ class LetStatementHandler(TemplateStatmentHandler):
     label = 'letStatement'
     check_chain = [
         ('let',SupportHandler(('let', 'keyword')).findTarget, lambda x: SupportHandler(('let', 'keyword')).toXML()),
-        ('varName',VarNameHandler.findVarName, lambda x: VarNameHandler(x).toXML()),
+        ('varName',VarNameHandler.findName, lambda x: VarNameHandler(x).toXML()),
         ('=',SupportHandler(('=', 'symbol')).findTarget, lambda x: SupportHandler(('=', 'symbol')).toXML()),
         ('expression',ExpressionHandler.findExpression, lambda x: ExpressionHandler(x).toXML()),
         (';',SupportHandler((';', 'symbol')).findTarget, lambda x: SupportHandler((';', 'symbol')).toXML())     
@@ -144,7 +144,7 @@ class LetArrayStatementHandler(TemplateStatmentHandler):
     label = 'letStatement'
     check_chain = [
         ('let',SupportHandler(('let', 'keyword')).findTarget, lambda x: SupportHandler(('let', 'keyword')).toXML()),
-        ('varName',VarNameHandler.findVarName, lambda x: VarNameHandler(x).toXML()),
+        ('varName',VarNameHandler.findName, lambda x: VarNameHandler(x).toXML()),
         ('[',SupportHandler(('[', 'symbol')).findTarget, lambda x: SupportHandler(('[', 'symbol')).toXML()),
         ('expression',ExpressionHandler.findExpression, lambda x: ExpressionHandler(x).toXML()),
         (']',SupportHandler((']', 'symbol')).findTarget, lambda x: SupportHandler((']', 'symbol')).toXML()),

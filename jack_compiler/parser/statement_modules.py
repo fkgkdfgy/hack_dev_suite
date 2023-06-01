@@ -192,7 +192,7 @@ class ReturnStatementHandler(TemplateStatmentHandler):
 
 class VoidReturnStatementHandler(TemplateStatmentHandler):
     isTerminal = False
-    label = 'voidReturnStatement'
+    label = 'returnStatement'
 
     def __init__(self, unstructed_xml=None):
         self.check_chain = {
@@ -203,7 +203,7 @@ class VoidReturnStatementHandler(TemplateStatmentHandler):
         super().__init__(unstructed_xml)
 
 class StatementHandler(BaseHandler):    
-    isTerminal = False
+    isTerminal = True
     label = 'statement'
 
     check_function = {

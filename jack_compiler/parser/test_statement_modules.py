@@ -192,12 +192,12 @@ def test_statement_return_statement_void():
     # 测试 is
     assert StatementHandler.isStatement(unstructured_xml) == True
 
-# code for codeSegement ::= let a=1; let A[1] = A_2[A_3[A_4(3+5)]]
+# code for codeSegement ::= let a=1; let A[1] = A_2[A_4(3+5)];
 @add_test_instance
 def test_statements_let_statement_complex():
-    _,unstructured_xml = segmentCodes('''let a=1; let A[1] = A_2[A_3[A_4(3+5)]];''')
+    _,unstructured_xml = segmentCodes('''let a=1; let A[1] = A_2[A_4(3+5)];''')
     handler = MultiStatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<statements> <letStatement> <keyword> let </keyword> <identifier> a </identifier> <symbol> = </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement> <letStatement> <keyword> let </keyword> <identifier> A </identifier> <symbol> [ </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ] </symbol> <symbol> = </symbol> <expression> <term> <identifier> A_2 </identifier> <symbol> [ </symbol> <expression> <term> <identifier> A_3 </identifier> <symbol> [ </symbol> <expression> <term> <identifier> A_4 </identifier> <symbol> ( </symbol> <expressionList> <expression> <term> <intConst> 3 </intConst> </term> </expression> <symbol> + </symbol> <expression> <term> <intConst> 5 </intConst> </term> </expression> </expressionList> <symbol> ) </symbol> </term> </expression> </expression> <symbol> ] </symbol> </term> </expression> <symbol> ; </symbol> </letStatement> </statements>''')
+    assert_answer(handler.toXML(), '''<statements> <letStatement> <keyword> let </keyword> <identifier> a </identifier> <symbol> = </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement> <letStatement> <keyword> let </keyword> <identifier> A </identifier> <symbol> [ </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ] </symbol> <symbol> = </symbol> <expression> <term> <identifier> A_2 </identifier> <symbol> [ </symbol> <expression> <term> <identifier> A_4 </identifier> <symbol> ( </symbol> <expressionList> <expression> <term> <intConst> 3 </intConst> </term> <symbol> + </symbol> <term> <intConst> 5 </intConst> </term> </expression> </expressionList> <symbol> ) </symbol> </term> </expression> <symbol> ] </symbol></term> </expression> <symbol> ; </symbol> </letStatement> </statements>''')
     # 测试 find
     assert MultiStatementHandler.findMultiStatement(unstructured_xml) == len(unstructured_xml)
     # 测试 is

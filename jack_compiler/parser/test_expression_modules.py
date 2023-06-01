@@ -200,6 +200,17 @@ def test_term_isNestedSubroutineCall4():
     handler = TermHandler(unstructured_xml)
     # 生成的答案存在问题，但是不影响编译，所以先不管了
 
+# code for segementCodes ::= A(3+5)
+@add_test_instance
+def test_term_isNestedSubroutineCall5():
+    _,unstructured_xml = segmentCodes('''A(3+5)''')
+    handler = TermHandler(unstructured_xml)
+    assert_answer(handler.toXML(), '''<term> <identifier> A </identifier> <symbol> ( </symbol> <expressionList> <expression> <term> <intConst> 3 </intConst> </term> <symbol> + </symbol> <term> <intConst> 5 </intConst> </term> </expression> </expressionList> <symbol> ) </symbol> </term>''')
+    # 测试 find
+    assert TermHandler.findTerm(unstructured_xml) == len(unstructured_xml)
+    # 测试 is
+    assert TermHandler.isTerm(unstructured_xml) == True
+
 # code for segmentCodes ::= A_2[A_3[A_4[A_5]]]
 @add_test_instance
 def test_term_isNestedArrayGet():

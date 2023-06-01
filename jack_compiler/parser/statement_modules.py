@@ -22,14 +22,13 @@ def check_chain_with_func_list(left_xml, func_list):
     return find_flag
 
 # 主要用于帮助处理chain_check ,所以这个特殊的handler有一些奇怪的地方
-
 class SupportHandler(BaseHandler):
     isTerminal = True
     label = 'support'
 
     def __init__(self, target_word_and_type):
-        if not target_word_and_type or len(target_word_and_type) != 1:
-            raise StatementException('SupportHandler must have one word and type')
+        if not target_word_and_type or not isinstance(target_word_and_type, tuple) or len(target_word_and_type) != 2:
+            raise StatementException('SupportHandler must have one word and type and input must be tuple')
         super().__init__(target_word_and_type)
         self.target_word_and_type = target_word_and_type
 
@@ -51,19 +50,21 @@ class SupportHandler(BaseHandler):
 
 class TemplateStatmentHandler(BaseHandler):
 
+    check_chain = {}
+    valid_num = []
+
     def __init__(self, unstructed_xml=None):
-        self.check_chain = {}
-        self.valid_num = []
         super().__init__(unstructed_xml)
 
     def processXML(self, unstructured_xml):
         self.xml = ''
         if self.isTargetStatement(unstructured_xml):
-            find_flag = check_chain_with_func_list(unstructured_xml, [ check_function for check_function,_ in self.check_chain.values()])
-            for index,function_pair in enumerate(self.check_chain.values()):
+            find_flag = check_chain_with_func_list(unstructured_xml, [ find_function for _,find_function,_ in self.check_chain])
+            for index,function_pair in enumerate(self.check_chain):
+                item_name, find_function, process_function = function_pair
                 if find_flag[index]:
-                    find_length = function_pair[0](unstructured_xml)
-                    self.xml += function_pair[1](unstructured_xml[:find_length])
+                    find_length = find_function(unstructured_xml)
+                    self.xml += process_function(unstructured_xml[:find_length])
                     unstructured_xml = unstructured_xml[find_length:]
                 else:
                     break
@@ -72,135 +73,148 @@ class TemplateStatmentHandler(BaseHandler):
 
     @common_empty_check
     def isTargetStatement(self,unstructured_xml):
-        find_flag = check_chain_with_func_list(unstructured_xml, [ check_function for check_function,_ in self.check_chain.values()])
-        # 如果 find_flag 中的 True 的个数不在 valid_num 中，返回 False
-        if find_flag.count(True) not in self.valid_num:
+        find_flag = self.findTargetStatement(unstructured_xml)
+        if find_flag < 0 or find_flag != len(unstructured_xml):
             return False
         return True
 
     def findTargetStatement(self,unstructured_xml):
-        find_flag = check_chain_with_func_list(unstructured_xml, [ check_function for check_function,_ in self.check_chain.values()])
+        find_flag = check_chain_with_func_list(unstructured_xml, [ find_function for _,find_function,_ in self.check_chain])
         # 如果 find_flag 中的 True 的个数不在 valid_num 中，返回 False
         if find_flag.count(True) not in self.valid_num:
             return -1
         else:
             find_length = 0
-            for index,function_pair in enumerate(self.check_chain.values()):
+            for index,function_pair in enumerate(self.check_chain):
+                item_name, find_function, process_function = function_pair
                 if find_flag[index]:
-                    check_function,_ = function_pair
-                    find_length += check_function(unstructured_xml[find_length:])
+                    find_length += find_function(unstructured_xml[find_length:])
                 else:
                     break
             return find_length    
 
+class MultiStatementHandler(BaseHandler):
+    isTerminal = False
+    label = 'statements'
+
+    def processXML(self, unstructured_xml):
+        if MultiStatementHandler.isMultiStatement(unstructured_xml):
+            left_xml = unstructured_xml
+            while left_xml:
+                find_length = StatementHandler.findStatement(left_xml)
+                self.xml += StatementHandler(left_xml[:find_length]).toXML()
+                left_xml = left_xml[find_length:]
+        else:
+            raise Exception('MultiStatementHandler: not a multi statement')
+
+    @common_empty_check
+    def isMultiStatement(unstructured_xml):
+        find_length = MultiStatementHandler.findMultiStatement(unstructured_xml)
+        if find_length <0:
+            return False
+        if find_length == len(unstructured_xml):
+            return True
+        return MultiStatementHandler.isMultiStatement(unstructured_xml[find_length:])
+
+    def findMultiStatement(unstructured_xml):
+        if not unstructured_xml:
+            return -1
+        find_length = StatementHandler.findStatement(unstructured_xml)
+        if find_length < 0:
+            return -1
+        else:
+            next_find_length = MultiStatementHandler.findMultiStatement(unstructured_xml[find_length:])
+            return (find_length) if next_find_length < 0 else (find_length + next_find_length)
+
+
 class LetStatementHandler(TemplateStatmentHandler):
     isTerminal = False
     label = 'letStatement'
-
-    def __init__(self, unstructed_xml=None):
-        self.check_chain = {
-            'let': (SupportHandler(('let', 'keyword')).findTarget, lambda x: SupportHandler(('let', 'keyword')).toXML()),
-            'varName': (VarNameHandler.isVarName, lambda x: VarNameHandler(x).toXML()),
-            '=': (SupportHandler(('=', 'symbol')).findTarget, lambda x: SupportHandler(('=', 'symbol')).toXML()),
-            'expression': (ExpressionHandler.isExpression, lambda x: ExpressionHandler(x).toXML()),
-            ';': (SupportHandler((';', 'symbol')).findTarget, lambda x: SupportHandler((';', 'symbol')).toXML()),            
-        }
-        self.valid_num = [5]
-        super().__init__(unstructed_xml)
+    check_chain = [
+        ('let',SupportHandler(('let', 'keyword')).findTarget, lambda x: SupportHandler(('let', 'keyword')).toXML()),
+        ('varName',VarNameHandler.findVarName, lambda x: VarNameHandler(x).toXML()),
+        ('=',SupportHandler(('=', 'symbol')).findTarget, lambda x: SupportHandler(('=', 'symbol')).toXML()),
+        ('expression',ExpressionHandler.findExpression, lambda x: ExpressionHandler(x).toXML()),
+        (';',SupportHandler((';', 'symbol')).findTarget, lambda x: SupportHandler((';', 'symbol')).toXML())     
+    ]
+    valid_num = [5]
 
 class LetArrayStatementHandler(TemplateStatmentHandler):
     isTerminal = False
     label = 'letStatement'
-
-    def __init__(self, unstructed_xml=None):
-        self.check_chain = {
-            'let': (SupportHandler(('let', 'keyword')).findTarget, lambda x: SupportHandler(('let', 'keyword')).toXML()),
-            'varName': (VarNameHandler.isVarName, lambda x: VarNameHandler(x).toXML()),
-            '[': (SupportHandler(('[', 'symbol')).findTarget, lambda x: SupportHandler(('[', 'symbol')).toXML()),
-            'expression': (ExpressionHandler.isExpression, lambda x: ExpressionHandler(x).toXML()),
-            ']': (SupportHandler((']', 'symbol')).findTarget, lambda x: SupportHandler((']', 'symbol')).toXML()),
-            '=': (SupportHandler(('=', 'symbol')).findTarget, lambda x: SupportHandler(('=', 'symbol')).toXML()),
-            'expression': (ExpressionHandler.isExpression, lambda x: ExpressionHandler(x).toXML()),
-            ';': (SupportHandler((';', 'symbol')).findTarget, lambda x: SupportHandler((';', 'symbol')).toXML()),            
-        }
-        self.valid_num = [9]
-        super().__init__(unstructed_xml)
+    check_chain = [
+        ('let',SupportHandler(('let', 'keyword')).findTarget, lambda x: SupportHandler(('let', 'keyword')).toXML()),
+        ('varName',VarNameHandler.findVarName, lambda x: VarNameHandler(x).toXML()),
+        ('[',SupportHandler(('[', 'symbol')).findTarget, lambda x: SupportHandler(('[', 'symbol')).toXML()),
+        ('expression',ExpressionHandler.findExpression, lambda x: ExpressionHandler(x).toXML()),
+        (']',SupportHandler((']', 'symbol')).findTarget, lambda x: SupportHandler((']', 'symbol')).toXML()),
+        ('=',SupportHandler(('=', 'symbol')).findTarget, lambda x: SupportHandler(('=', 'symbol')).toXML()),
+        ('expression',ExpressionHandler.findExpression, lambda x: ExpressionHandler(x).toXML()),
+        (';',SupportHandler((';', 'symbol')).findTarget, lambda x: SupportHandler((';', 'symbol')).toXML())     
+    ]
+    valid_num = [8]
 
 class IfStatementHandler(TemplateStatmentHandler):
     isTerminal = False
     label = 'ifStatement'
-
-    def __init__(self, unstructed_xml=None):
-        self.check_chain = {
-            'if': (SupportHandler(('if', 'keyword')).findTarget, lambda x: SupportHandler(('if', 'keyword')).toXML()),
-            '(': (SupportHandler(('(', 'symbol')).findTarget, lambda x: SupportHandler(('(', 'symbol')).toXML()),
-            'expression': (ExpressionHandler.isExpression, lambda x: ExpressionHandler(x).toXML()),
-            ')': (SupportHandler((')', 'symbol')).findTarget, lambda x: SupportHandler((')', 'symbol')).toXML()),
-            '{': (SupportHandler(('{', 'symbol')).findTarget, lambda x: SupportHandler(('{', 'symbol')).toXML()),
-            'statements': (MultiStatementHandler.isMultiStatement, lambda x: MultiStatementHandler(x).toXML()),
-            '}': (SupportHandler(('}', 'symbol')).findTarget, lambda x: SupportHandler(('}', 'symbol')).toXML()),
-            'else': (SupportHandler(('else', 'keyword')).findTarget, lambda x: SupportHandler(('else', 'keyword')).toXML()),
-            '{': (SupportHandler(('{', 'symbol')).findTarget, lambda x: SupportHandler(('{', 'symbol')).toXML()),
-            'statements': (MultiStatementHandler.isMultiStatement, lambda x: MultiStatementHandler(x).toXML()),
-            '}': (SupportHandler(('}', 'symbol')).findTarget, lambda x: SupportHandler(('}', 'symbol')).toXML())
-        }
-        self.valid_num = [7,11]
-        super().__init__(unstructed_xml)
+    check_chain = [
+        ('if',SupportHandler(('if', 'keyword')).findTarget, lambda x: SupportHandler(('if', 'keyword')).toXML()),
+        ('(',SupportHandler(('(', 'symbol')).findTarget, lambda x: SupportHandler(('(', 'symbol')).toXML()),
+        ('expression',ExpressionHandler.findExpression, lambda x: ExpressionHandler(x).toXML()),
+        (')',SupportHandler((')', 'symbol')).findTarget, lambda x: SupportHandler((')', 'symbol')).toXML()),
+        ('{',SupportHandler(('{', 'symbol')).findTarget, lambda x: SupportHandler(('{', 'symbol')).toXML()),
+        ('statements',MultiStatementHandler.findMultiStatement, lambda x: MultiStatementHandler(x).toXML()),
+        ('}',SupportHandler(('}', 'symbol')).findTarget, lambda x: SupportHandler(('}', 'symbol')).toXML()),
+        ('else',SupportHandler(('else', 'keyword')).findTarget, lambda x: SupportHandler(('else', 'keyword')).toXML()),
+        ('{',SupportHandler(('{', 'symbol')).findTarget, lambda x: SupportHandler(('{', 'symbol')).toXML()),
+        ('statements',MultiStatementHandler.findMultiStatement, lambda x: MultiStatementHandler(x).toXML()),
+        ('}',SupportHandler(('}', 'symbol')).findTarget, lambda x: SupportHandler(('}', 'symbol')).toXML())
+    ]
+    valid_num = [7,11]
 
 class WhileStatementHandler(TemplateStatmentHandler):
     isTerminal = False
     label = 'whileStatement'
 
-    def __init__(self, unstructed_xml=None):
-        self.check_chain = {
-            'while': (SupportHandler(('while', 'keyword')).findTarget, lambda x: SupportHandler(('while', 'keyword')).toXML()),
-            '(': (SupportHandler(('(', 'symbol')).findTarget, lambda x: SupportHandler(('(', 'symbol')).toXML()),
-            'expression': (ExpressionHandler.isExpression, lambda x: ExpressionHandler(x).toXML()),
-            ')': (SupportHandler((')', 'symbol')).findTarget, lambda x: SupportHandler((')', 'symbol')).toXML()),
-            '{': (SupportHandler(('{', 'symbol')).findTarget, lambda x: SupportHandler(('{', 'symbol')).toXML()),
-            'statements': (MultiStatementHandler.isMultiStatement, lambda x: MultiStatementHandler(x).toXML()),
-            '}': (SupportHandler(('}', 'symbol')).findTarget, lambda x: SupportHandler(('}', 'symbol')).toXML())
-        }
-        self.valid_num = [7]
-        super().__init__(unstructed_xml)
+    check_chain = [
+        ('while',SupportHandler(('while', 'keyword')).findTarget, lambda x: SupportHandler(('while', 'keyword')).toXML()),
+        ('(',SupportHandler(('(', 'symbol')).findTarget, lambda x: SupportHandler(('(', 'symbol')).toXML()),
+        ('expression',ExpressionHandler.findExpression, lambda x: ExpressionHandler(x).toXML()),
+        (')',SupportHandler((')', 'symbol')).findTarget, lambda x: SupportHandler((')', 'symbol')).toXML()),
+        ('{',SupportHandler(('{', 'symbol')).findTarget, lambda x: SupportHandler(('{', 'symbol')).toXML()),
+        ('statements',MultiStatementHandler.findMultiStatement, lambda x: MultiStatementHandler(x).toXML()),
+        ('}',SupportHandler(('}', 'symbol')).findTarget, lambda x: SupportHandler(('}', 'symbol')).toXML())
+    ]
+    valid_num = [7]
 
 class DoStatementHandler(TemplateStatmentHandler):
     isTerminal = False
     label = 'doStatement'
-
-    def __init__(self, unstructed_xml=None):
-        self.check_chain = {
-            'do':   (SupportHandler(('do', 'keyword')).findTarget, lambda x: SupportHandler(('do', 'keyword')).toXML()),
-            'subroutineCall': (SubroutineCallHandler.isSubroutineCall, lambda x: SubroutineCallHandler(x).toXML()),
-            ';': (SupportHandler((';', 'symbol')).findTarget, lambda x: SupportHandler((';', 'symbol')).toXML())
-        }
-        self.valid_num = [3]
-        super().__init__(unstructed_xml)
+    check_chain = [
+        ('do',SupportHandler(('do', 'keyword')).findTarget, lambda x: SupportHandler(('do', 'keyword')).toXML()),
+        ('subroutineCall',SubroutineCallHandler.findSubroutineCall, lambda x: SubroutineCallHandler(x).toXML()),
+        (';',SupportHandler((';', 'symbol')).findTarget, lambda x: SupportHandler((';', 'symbol')).toXML())
+    ]
+    valid_num = [3]
 
 class ReturnStatementHandler(TemplateStatmentHandler):
     isTerminal = False
     label = 'returnStatement'
-
-    def __init__(self, unstructed_xml=None):
-        self.check_chain = {
-            'return': (SupportHandler(('return', 'keyword')).findTarget, lambda x: SupportHandler(('return', 'keyword')).toXML()),
-            'expression': (ExpressionHandler.isExpression, lambda x: ExpressionHandler(x).toXML()),
-            ';': (SupportHandler((';', 'symbol')).findTarget, lambda x: SupportHandler((';', 'symbol')).toXML())
-        }
-        self.valid_num = [3]
-        super().__init__(unstructed_xml)
+    check_chain = [
+        ('return',SupportHandler(('return', 'keyword')).findTarget, lambda x: SupportHandler(('return', 'keyword')).toXML()),
+        ('expression',ExpressionHandler.findExpression, lambda x: ExpressionHandler(x).toXML()),
+        (';',SupportHandler((';', 'symbol')).findTarget, lambda x: SupportHandler((';', 'symbol')).toXML())
+    ]
+    valid_num = [3]
 
 class VoidReturnStatementHandler(TemplateStatmentHandler):
     isTerminal = False
     label = 'returnStatement'
-
-    def __init__(self, unstructed_xml=None):
-        self.check_chain = {
-            'return': (SupportHandler(('return', 'keyword')).findTarget, lambda x: SupportHandler(('return', 'keyword')).toXML()),
-            ';': (SupportHandler((';', 'symbol')).findTarget, lambda x: SupportHandler((';', 'symbol')).toXML())
-        }
-        self.valid_num = [2]
-        super().__init__(unstructed_xml)
+    check_chain = [
+        ('return',SupportHandler(('return', 'keyword')).findTarget, lambda x: SupportHandler(('return', 'keyword')).toXML()),
+        (';',SupportHandler((';', 'symbol')).findTarget, lambda x: SupportHandler((';', 'symbol')).toXML())
+    ]
+    valid_num = [2]
 
 class StatementHandler(BaseHandler):    
     isTerminal = True
@@ -239,36 +253,4 @@ class StatementHandler(BaseHandler):
                 return i
         return -1
     
-class MultiStatementHandler(BaseHandler):
-    isTerminal = False
-    label = 'statements'
 
-    def processXML(self, unstructured_xml):
-        if MultiStatementHandler.isMultiStatement(unstructured_xml):
-            left_xml = unstructured_xml
-            while left_xml:
-                find_length = StatementHandler.findStatement(left_xml)
-                self.xml += StatementHandler(left_xml[:find_length]).toXML()
-                left_xml = left_xml[find_length:]
-        else:
-            raise Exception('MultiStatementHandler: not a multi statement')
-
-    @common_empty_check
-    def isMultiStatement(unstructured_xml):
-        find_length = MultiStatementHandler.findMultiStatement(unstructured_xml)
-        if find_length <0:
-            return False
-        if find_length == len(unstructured_xml):
-            return True
-        return MultiStatementHandler.isMultiStatement(unstructured_xml[find_length:])
-
-    def findMultiStatement(unstructured_xml):
-        if not unstructured_xml:
-            return -1
-        find_length = StatementHandler.findStatements(unstructured_xml)
-        if find_length < 0:
-            return -1
-        else:
-            next_find_length = MultiStatementHandler.findMultiStatement(unstructured_xml[find_length:])
-            return (find_length) if next_find_length < 0 else (find_length + next_find_length)
-    

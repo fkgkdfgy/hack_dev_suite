@@ -131,7 +131,7 @@ class ExpressionListHandler(BaseHandler):
             find_length = ExpressionHandler.findExpression(unstructured_xml)
             if find_length != -1:
                 children.append(ExpressionHandler(unstructured_xml[0:find_length]))
-                children.append(PsedoHandler(unstructured_xml[find_length]))
+                children.append(SupportHandler(unstructured_xml[find_length]))
                 recursive_fill_children(unstructured_xml[find_length+1:])
             else:
                 raise ExpressionException("something wrong with {0}".format(unstructured_xml))

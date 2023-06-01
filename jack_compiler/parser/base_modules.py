@@ -231,7 +231,7 @@ class SelectHandler(BaseHandler):
     isTerminal = False
     label = 'term'
 
-    candiates = {}
+    candidates = {}
 
     def __init__(self, unstructured_xml=None):
         BaseHandler.__init__(self, unstructured_xml)

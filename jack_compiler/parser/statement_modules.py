@@ -108,6 +108,24 @@ class LetStatementHandler(TemplateStatmentHandler):
         self.valid_num = [5]
         super().__init__(unstructed_xml)
 
+class LetArrayStatementHandler(TemplateStatmentHandler):
+    isTerminal = False
+    label = 'letStatement'
+
+    def __init__(self, unstructed_xml=None):
+        self.check_chain = {
+            'let': (SupportHandler(('let', 'keyword')).findTarget, lambda x: SupportHandler(('let', 'keyword')).toXML()),
+            'varName': (VarNameHandler.isVarName, lambda x: VarNameHandler(x).toXML()),
+            '[': (SupportHandler(('[', 'symbol')).findTarget, lambda x: SupportHandler(('[', 'symbol')).toXML()),
+            'expression': (ExpressionHandler.isExpression, lambda x: ExpressionHandler(x).toXML()),
+            ']': (SupportHandler((']', 'symbol')).findTarget, lambda x: SupportHandler((']', 'symbol')).toXML()),
+            '=': (SupportHandler(('=', 'symbol')).findTarget, lambda x: SupportHandler(('=', 'symbol')).toXML()),
+            'expression': (ExpressionHandler.isExpression, lambda x: ExpressionHandler(x).toXML()),
+            ';': (SupportHandler((';', 'symbol')).findTarget, lambda x: SupportHandler((';', 'symbol')).toXML()),            
+        }
+        self.valid_num = [9]
+        super().__init__(unstructed_xml)
+
 class IfStatementHandler(TemplateStatmentHandler):
     isTerminal = False
     label = 'ifStatement'
@@ -190,6 +208,7 @@ class StatementHandler(BaseHandler):
 
     check_function = {
         'letStatement': (LetStatementHandler().isTargetStatement, lambda x: LetStatementHandler(x).toXML()),
+        'letArrayStatement': (LetArrayStatementHandler().isTargetStatement, lambda x: LetArrayStatementHandler(x).toXML()),
         'ifStatement': (IfStatementHandler().isTargetStatement, lambda x: IfStatementHandler(x).toXML()),
         'whileStatement': (WhileStatementHandler().isTargetStatement, lambda x: WhileStatementHandler(x).toXML()),
         'doStatement': (DoStatementHandler().isTargetStatement, lambda x: DoStatementHandler(x).toXML()),

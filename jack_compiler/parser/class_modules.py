@@ -57,11 +57,18 @@ class VarDecHandler(TemplateStatmentHandler):
     ]
     valid_num = [4]
 
+static_support_handler = SupportHandler(('static','keyword'))
+static_support_unit = Unit( 'static',static_support_handler.findTarget,lambda x: static_support_handler.isTarget(x),lambda x: static_support_handler.toXML())
+field_support_handler = SupportHandler(('field','keyword'))
+field_support_unit = Unit( 'field',field_support_handler.findTarget,lambda x: field_support_handler.isTarget(x),lambda x: field_support_handler.toXML())
+static_or_field_handler = OrHanlder(static_support_unit,field_support_unit)
+
+# classVarDec 的结构是 (static|field) type varName (, varName)* ;
 class ClassVarDecHandler(TemplateStatmentHandler):
     isTerminal = False
     label = 'classVarDec'
     check_chain = [
-        ('static_or_field',SupportHandler(('static','field')).findTarget,lambda x: SupportHandler(('static','field')).toXML()),
+        ('static_or_field',static_or_field_handler.findUnit,lambda x : static_or_field_handler.processXML(x)),
         ('type',TypeHandler.findType, lambda x: TypeHandler(x).toXML()),
         ('mutli_varName',MultiUnitHandler(base_unit=varName_unit,option_units=[comma_unit,varName_unit]))
         (';',SupportHandler((';', 'symbol')).findTarget, lambda x: SupportHandler((';', 'symbol')).toXML())
@@ -87,12 +94,15 @@ class ParameterListHandler(TemplateStatmentHandler):
     valid_num = [2,3]
 
 varDec_unit = Unit('varDec',VarDecHandler.findStatement,VarDecHandler.isStatement,lambda x: VarDecHandler(x).toXML())
+multi_varDec_handler = MultiUnitHandler(base_unit=None,option_units=[varDec_unit])
+empty_or_multi_varDec_handler = OrHanlder(EmptyHandler(),multi_varDec_handler)
 
 class NoneVarDecSubroutineBOdyHandler(TemplateStatmentHandler):
     isTerminal = False
     label = 'subroutineBody'
     check_chain = [
         ('{',SupportHandler(('{', 'symbol')).findTarget, lambda x: SupportHandler(('{', 'symbol')).toXML()),
+        ('empty_or_multi_varDec',),
         ('statements',StatementHandler.findStatement,lambda x: StatementHandler.isStatement(x),lambda x: StatementHandler(x).toXML()),
         ('}',SupportHandler(('}', 'symbol')).findTarget, lambda x: SupportHandler(('}', 'symbol')).toXML())
     ]
@@ -103,7 +113,6 @@ class SubroutineBodyHandler(TemplateStatmentHandler):
     label = 'subroutineBody'
     check_chain = [
         ('{',SupportHandler(('{', 'symbol')).findTarget, lambda x: SupportHandler(('{', 'symbol')).toXML()),
-        ('mutli_varDec',MultiUnitHandler(base_unit=None,option_units=[varDec_unit])),
         ('statements',StatementHandler.findStatement,lambda x: StatementHandler.isStatement(x),lambda x: StatementHandler(x).toXML()),
         ('}',SupportHandler(('}', 'symbol')).findTarget, lambda x: SupportHandler(('}', 'symbol')).toXML())
     ]

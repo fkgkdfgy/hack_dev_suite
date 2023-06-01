@@ -96,6 +96,7 @@ class MultiUnitHandler(BaseHandler):
                 unit_length = unit.find_function(unstructured_xml[find_length:])
                 self.xml += unit.transform_function(unstructured_xml[find_length:find_length+unit_length])
                 find_length += unit_length
+            return self.xml
         else:
             raise BaseException("MultiUnitHandler: unstructured_xml is not a multi unit")
 
@@ -170,8 +171,47 @@ class OrHanlder(BaseHandler):
         self.unit2 = unit2
         super().__init__(unstructed_xml)
 
-    def findUnit():
-        pass
+    def processXML(self, unstructured_xml):
+        if self.isUnit(unstructured_xml):
+            if self.isUnit1(unstructured_xml):
+                self.xml = self.unit1.transform_function(unstructured_xml)
+            else:
+                self.xml = self.unit2.transform_function(unstructured_xml)
+            return self.xml
+        else:
+            raise BaseException("OrHandler: unstructured_xml is not a unit")
 
-    def isUnit():
-        pass
+    def isUnit1(self,unstructured_xml):
+        if self.unit1.is_function(unstructured_xml):
+            return True
+        return False
+
+    def isUnit2(self,unstructured_xml):
+        if self.unit2.is_function(unstructured_xml):
+            return True
+        return False
+
+    def findUnit1(self,unstructured_xml):
+        return self.unit1.find_function(unstructured_xml)
+    
+    def findUnit2(self,unstructured_xml):
+        return self.unit2.find_function(unstructured_xml)
+
+    def findUnit(self,unstructured_xml):
+        find_length1 = self.findUnit1(unstructured_xml)
+        find_length2 = self.findUnit2(unstructured_xml)
+        if find_length1 < 0 and find_length2 < 0:
+            return -1
+        if find_length1 > 0 and find_length2 > 0:
+            raise BaseException("OrHandler: find two units")
+        if find_length1 < 0:
+            return find_length2
+        if find_length2 < 0:
+            return find_length1
+
+    def isUnit(self,unstructured_xml):
+        if self.isUnit1(unstructured_xml) and self.isUnit2(unstructured_xml):
+            raise BaseException("OrHandler: find two units")
+        if self.isUnit1(unstructured_xml) or self.isUnit2(unstructured_xml):
+            return True
+        return False

@@ -5,7 +5,7 @@ class StatementException(Exception):
     pass
 
 class MultiStatementHandler(SequenceHandler):
-    isTerminal = False
+    isTerminal = True
     label = 'statements'
 
     @property
@@ -23,7 +23,7 @@ class MultiStatementHandler(SequenceHandler):
         return self._valid_num
 
 class LetStatementHandler(SequenceHandler):
-    isTerminal = False
+    isTerminal = True
     label = 'letStatement'
 
     @property
@@ -45,7 +45,7 @@ class LetStatementHandler(SequenceHandler):
         return self._valid_num
 
 class LetArrayStatementHandler(SequenceHandler):
-    isTerminal = False
+    isTerminal = True
     label = 'letStatement'
 
     @property
@@ -70,7 +70,7 @@ class LetArrayStatementHandler(SequenceHandler):
         return self._valid_num
 
 class IfStatementHandler(SequenceHandler):
-    isTerminal = False
+    isTerminal = True
     label = 'ifStatement'
 
     @property
@@ -98,7 +98,7 @@ class IfStatementHandler(SequenceHandler):
         return self._valid_num
 
 class WhileStatementHandler(SequenceHandler):
-    isTerminal = False
+    isTerminal = True
     label = 'whileStatement'
 
     @property
@@ -120,9 +120,9 @@ class WhileStatementHandler(SequenceHandler):
         if not hasattr(self, '_valid_num'):
             self._valid_num = [7]
         return self._valid_num
-
+    
 class SubroutineCallHandler(SelectHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'subroutineCall'
 
     @property
@@ -133,9 +133,9 @@ class SubroutineCallHandler(SelectHandler):
                 'class': ClassFunctionCallHandler()
             }
         return self._candidates
-
+    
 class DoStatementHandler(SequenceHandler):
-    isTerminal = False
+    isTerminal = True
     label = 'doStatement'
 
     @property
@@ -155,7 +155,7 @@ class DoStatementHandler(SequenceHandler):
         return self._valid_num
 
 class ReturnStatementHandler(SequenceHandler):
-    isTerminal = False
+    isTerminal = True
     label = 'returnStatement'
 
     @property
@@ -175,7 +175,7 @@ class ReturnStatementHandler(SequenceHandler):
         return self._valid_num
 
 class VoidReturnStatementHandler(SequenceHandler):
-    isTerminal = False
+    isTerminal = True
     label = 'returnStatement'
 
     @property
@@ -194,7 +194,7 @@ class VoidReturnStatementHandler(SequenceHandler):
         return self._valid_num
 
 class StatementHandler(SelectHandler):    
-    isTerminal = True
+    isTerminal = False
     label = 'statement'
 
     @property

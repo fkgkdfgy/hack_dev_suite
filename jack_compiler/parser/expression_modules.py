@@ -8,7 +8,7 @@ class VarNameHandler(NameHandler):
     label = 'varName'
 
 class KeywordConstantHandler(SimpleHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'keywordConstant'
 
     def findTarget(self, unstructured_xml):
@@ -20,7 +20,7 @@ class KeywordConstantHandler(SimpleHandler):
             return -1
 
 class OpHandler(SimpleHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'op'
 
     def findTarget(self,unstructured_xml):
@@ -32,7 +32,7 @@ class OpHandler(SimpleHandler):
             return -1
 
 class ConstantHandler(SimpleHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'constant'
     
     def findTarget(self,unstructured_xml):
@@ -44,7 +44,7 @@ class ConstantHandler(SimpleHandler):
             return -1
         
 class UnaryOpHandler(SimpleHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'unaryOp'
     
     def findTarget(self,unstructured_xml):
@@ -55,9 +55,8 @@ class UnaryOpHandler(SimpleHandler):
         else:
             return -1
 
-
 class ExpressionListHandler(SelectHandler):
-    isTerminal = False
+    isTerminal = True
     label = 'expressionList'
     
     @property
@@ -73,8 +72,9 @@ class ExpressionListHandler(SelectHandler):
         if not unstructured_xml:
             return 0
         return SelectHandler.findTarget(self, unstructured_xml)
+    
 class ExpressionHandler(SequenceHandler):
-    isTerminal = False
+    isTerminal = True
     label = 'expression'
     
     @property
@@ -92,7 +92,7 @@ class ExpressionHandler(SequenceHandler):
         return self._valid_num
 
 class PureFunctionCallHandler(SequenceHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'subroutineCall'
 
     @property
@@ -113,7 +113,7 @@ class PureFunctionCallHandler(SequenceHandler):
         return self._valid_num
 
 class ClassFunctionCallHandler(SequenceHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'subroutineCall'
     
     @property
@@ -136,7 +136,7 @@ class ClassFunctionCallHandler(SequenceHandler):
         return self._valid_num
 
 class TermExpressionHandler(SequenceHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'term'
 
     @property
@@ -157,7 +157,7 @@ class TermExpressionHandler(SequenceHandler):
     
 
 class ArrayGetHandler(SequenceHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'term'
 
     @property
@@ -178,7 +178,7 @@ class ArrayGetHandler(SequenceHandler):
         return self._check_chain
 
 class UnaryOpTermHandler(SequenceHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'term'
 
     @property
@@ -197,7 +197,7 @@ class UnaryOpTermHandler(SequenceHandler):
         return self._check_chain
     
 class TermHandler(SelectHandler):
-    isTerminal = False
+    isTerminal = True
     label = 'term'
 
     @property

@@ -18,7 +18,7 @@ class BaseHandler:
     
     def toXML(self):
         result_xml = ''
-        if not self.isTerminal:
+        if self.isTerminal:
             result_xml = '<{0}>'.format(self.label)
             result_xml += self.xml
             result_xml += '</{0}>'.format(self.label)
@@ -38,7 +38,7 @@ class BaseHandler:
         return False
 
 class SimpleHandler(BaseHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'simple'
 
     def processXML(self, unstructured_xml):
@@ -52,7 +52,7 @@ class SimpleHandler(BaseHandler):
             raise BaseException("something wrong with {0}".format(unstructured_xml))
 
 class SupportHandler(SimpleHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'support'
 
     def __init__(self, target_word_and_type):
@@ -67,7 +67,7 @@ class SupportHandler(SimpleHandler):
         return -1
 
 class NameHandler(BaseHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'name'
 
     def processXML(self, unstructured_xml):
@@ -87,7 +87,7 @@ class NameHandler(BaseHandler):
 
 # 这是个辅助的handler 用于处理多种重复的情况
 class MultiUnitHandler(BaseHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'multiUnit'
 
     def __init__(self, base_handler, options_handlers,unstructed_xml=None):
@@ -150,7 +150,7 @@ class MultiUnitHandler(BaseHandler):
         return find_length if next_find_length < 0 else find_length + next_find_length
     
 class EmptyHandler(BaseHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'empty'
 
     def __init__(self, unstructed_xml=None):
@@ -188,7 +188,7 @@ def check_chain_with_func_list(left_xml, handler_list):
 
 
 class SequenceHandler(BaseHandler):
-
+    isTerminal = False
     # check_chain 内部是多个handler
     check_chain = []
     valid_num = []

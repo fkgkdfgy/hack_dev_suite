@@ -1,7 +1,6 @@
 from expression_modules import *
 from tokenizer import Tokenizer
 
-
 test_instance = []
 
 def add_test_instance(instance):
@@ -191,14 +190,16 @@ def test_term_isNestedSubroutineCall2():
 def test_term_isNestedSubroutineCall3():
     _,unstructured_xml = segmentCodes('''A_2(A_3(A_4(A_5())))''')
     handler = TermHandler(unstructured_xml)
-    # 生成的答案存在问题，但是不影响编译，所以先不管了
+    assert_answer(handler.toXML(), '''<term> <identifier> A_2 </identifier> <symbol> ( </symbol> <expressionList> <expression> <term> <identifier> A_3 </identifier> <symbol> ( </symbol> <expressionList> <expression> <term> <identifier> A_4 </identifier> <symbol> ( </symbol> <expressionList> <expression> <term> 
+    <identifier> A_5 </identifier> <symbol> ( </symbol> <expressionList>
+    </expressionList> <symbol> ) </symbol> </term> </expression> </expressionList> <symbol> ) </symbol> </term> </expression> </expressionList> <symbol> ) </symbol> </term> </expression> </expressionList> <symbol> ) </symbol> </term>''')
 
 # code for segmentCodes ::= A((a+b)=(3+5+6+c+d))
 @add_test_instance
 def test_term_isNestedSubroutineCall4():
     _,unstructured_xml = segmentCodes('''A((a+b)=(3+5+6+c+d))''')
     handler = TermHandler(unstructured_xml)
-    # 生成的答案存在问题，但是不影响编译，所以先不管了
+    assert_answer(handler.toXML(), '''<term> <identifier> A </identifier> <symbol> ( </symbol> <expressionList> <expression> <term> <symbol> ( </symbol> <expression> <term> <identifier> a </identifier> </term> <symbol> + </symbol> <term> <identifier> b </identifier> </term> </expression> <symbol> ) </symbol> </term> <symbol> = </symbol> <term> <symbol> ( </symbol> <expression> <term> <intConst> 3 </intConst> </term> <symbol> + </symbol> <term> <intConst> 5 </intConst> </term> <symbol> + </symbol> <term> <intConst> 6 </intConst> </term> <symbol> + </symbol> <term> <identifier> c </identifier> </term> <symbol> + </symbol> <term> <identifier> d </identifier> </term> </expression> <symbol> ) </symbol> </term> </expression> </expressionList> <symbol> ) </symbol> </term>''')
 
 # code for segementCodes ::= A(3+5)
 @add_test_instance

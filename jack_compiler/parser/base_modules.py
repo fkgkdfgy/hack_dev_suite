@@ -237,6 +237,8 @@ class SequenceHandler(BaseHandler):
     # 如果 check_chain 中的最后一个 handler 是 SimpleHandler，那么先用这个handler 去检查 unstructured_xml的最后一个字符
     # 然后进行递归检查，直到handler不是SimpleHandler 或者 unstructured_xml 为空        
     def tailCheck(self,unstructured_xml):
+        if not unstructured_xml:
+            return False
         handlers = [handler for item_name, handler in self.check_chain]
         def recursive_check(left_xml, handlers):
             if not handlers:
@@ -253,6 +255,8 @@ class SequenceHandler(BaseHandler):
     # 如果 check_chain 中的第二个 handler 是 SimpleHandler，那么先用这个handler 去检查 unstructured_xml的第二个字符
     # 像上面这样不断递归，直到handler不是SimpleHandler 或者 unstructured_xml 为空
     def headCheck(self,unstructured_xml):
+        if not unstructured_xml:
+            return False
         handlers = [handler for item_name, handler in self.check_chain]
         def recursive_check(left_xml, handlers):
             if not handlers:

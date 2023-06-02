@@ -191,9 +191,9 @@ def test_statement_return_statement_void():
     _,unstructured_xml = segmentCodes('''return;''')
     handler = StatementHandler(unstructured_xml)
     assert_answer(handler.toXML(), '''<returnStatement> <keyword> return </keyword> <symbol> ; </symbol> </returnStatement>''')
-    # 测试 find
+    # # 测试 find
     assert StatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
-    # 测试 is
+    # # 测试 is
     assert StatementHandler().isTarget(unstructured_xml) == True
 
 # code for codeSegement ::= let a=1; let A[1] = A_2[A_4(3+5)];

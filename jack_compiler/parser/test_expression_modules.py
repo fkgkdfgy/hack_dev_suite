@@ -238,6 +238,32 @@ def test_expression():
     # 测试 is
     assert ExpressionHandler().isTarget(unstructured_xml) == True
 
+@add_test_instance
+def test_pureFunctionCall1():
+    _,unstructured_xml = segmentCodes('''a()''')
+    handler = PureFunctionCallHandler(unstructured_xml)
+    assert_answer(handler.toXML(), ''' <identifier> a </identifier> <symbol> ( </symbol> <expressionList> </expressionList> <symbol> ) </symbol>''')
+    # 测试 find
+    assert PureFunctionCallHandler().findTarget(unstructured_xml) == len(unstructured_xml),'{0} != {1}'.format(ExpressionHandler().findTarget(unstructured_xml), len(unstructured_xml))
+    # 测试 is
+    assert PureFunctionCallHandler().isTarget(unstructured_xml) == True
+
+@add_test_instance
+def test_pureFunctionCall2():
+    _,unstructured_xml = segmentCodes('''''')
+    handler = PureFunctionCallHandler(unstructured_xml)
+    assert PureFunctionCallHandler().findTarget(unstructured_xml) == -1,'{0} != {1}'.format(ExpressionHandler().findTarget(unstructured_xml), len(unstructured_xml))
+
+@add_test_instance
+def test_expression_abnormal():
+    _,unstructured_xml = segmentCodes(''';''')
+    # handler = ExpressionHandler(unstructured_xml)
+    # assert_answer(handler.toXML(), '''<expression> </expression>''')
+    # # 测试 find
+    assert ExpressionHandler().findTarget(unstructured_xml) == -1,'{0} != {1}'.format(ExpressionHandler().findTarget(unstructured_xml), len(unstructured_xml))
+    # 测试 is
+    # assert ExpressionHandler().isTarget(unstructured_xml) == True
+
 # code for segmentCodes ::= a+b+3+5+6+c+d
 @add_test_instance
 def test_expression_isLongOpTermExpression():
@@ -309,6 +335,7 @@ def test_expressionList_isNestedExpressionList():
     assert ExpressionListHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
     assert ExpressionListHandler().isTarget(unstructured_xml) == True
+
 
 
 if __name__ == '__main__':

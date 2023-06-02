@@ -266,6 +266,149 @@ def test_subroutineBody():
     # 测试 is
     assert SubroutineBodyHandler().isTarget(unstructured_xml) == True
 
+@add_test_instance
+def test_class():
+    _,unstructured_xml = segmentCodes('''class A {}''')
+    handler = ClassHandler(unstructured_xml)
+    assert_answer(handler.toXML(), '''<class>
+                <keyword> class </keyword>
+                <identifier> A </identifier>
+                <symbol> { </symbol>
+                <classVarDec>
+                </classVarDec>
+                <subroutineDec>
+                </subroutineDec>
+                <symbol> } </symbol>
+            </class>''')
+    # 测试 find
+    assert ClassHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    # 测试 is
+    assert ClassHandler().isTarget(unstructured_xml) == True
+
+@add_test_instance
+def test_class_complex():
+    _,unstructured_xml = segmentCodes('''class A {static int a; function void b() {let x = 1;}}''')
+    handler = ClassHandler(unstructured_xml)
+    assert_answer(handler.toXML(), '''<class>
+                <keyword> class </keyword>
+                <identifier> A </identifier>
+                <symbol> { </symbol>
+                <classVarDec>
+                    <keyword> static </keyword>
+                    <type>
+                        <keyword> int </keyword>
+                    </type>
+                    <varName> a </varName>
+                </classVarDec>
+                <subroutineDec>
+                    <keyword> function </keyword>
+                    <keyword> void </keyword>
+                    <subroutineName> b </subroutineName>
+                    <symbol> ( </symbol>
+                    <parameterList>
+                    </parameterList>
+                    <symbol> ) </symbol>
+                    <subroutineBody>
+                        <symbol> { </symbol>
+                        <varDec>
+                        </varDec>
+                        <statements>
+                            <letStatement>
+                                <keyword> let </keyword>
+                                <varName> x </varName>
+                                <symbol> = </symbol>
+                                <expression>
+                                    <term>
+                                        <integerConstant> 1 </integerConstant>
+                                    </term> 
+                                </expression>
+                                <symbol> ; </symbol>
+                            </letStatement>
+                        </statements>
+                        <symbol> } </symbol>
+                    </subroutineBody>
+                </subroutineDec>
+                <symbol> } </symbol>
+            </class>''')
+    # 测试 find
+    assert ClassHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    # 测试 is
+    assert ClassHandler().isTarget(unstructured_xml) == True
+
+@add_test_instance
+def test_class_more_complex():
+    _,unstructured_xml = segmentCodes('''class A {static int a; function void b() {let x = 1;} function void c() {let y = 2;}}''')
+    handler = ClassHandler(unstructured_xml)
+    assert_answer(handler.toXML(), '''<class>
+                <keyword> class </keyword>
+                <identifier> A </identifier>
+                <symbol> { </symbol>
+                <classVarDec>
+                    <keyword> static </keyword>
+                    <type>
+                        <keyword> int </keyword>
+                    </type>
+                    <varName> a </varName>
+                </classVarDec>
+                <subroutineDec>
+                    <keyword> function </keyword>
+                    <keyword> void </keyword>
+                    <subroutineName> b </subroutineName>
+                    <symbol> ( </symbol>
+                    <parameterList>
+                    </parameterList>
+                    <symbol> ) </symbol>
+                    <subroutineBody>
+                        <symbol> { </symbol>
+                        <varDec>
+                        </varDec>
+                        <statements>
+                            <letStatement>
+                                <keyword> let </keyword>
+                                <varName> x </varName>
+                                <symbol> = </symbol>
+                                <expression>
+                                    <term>
+                                        <integerConstant> 1 </integerConstant>
+                                    </term> 
+                                </expression>
+                                <symbol> ; </symbol>
+                            </letStatement>
+                        </statements>
+                        <symbol> } </symbol>
+                    </subroutineBody>
+                </subroutineDec>
+                <subroutineDec>
+                    <keyword> function </keyword>
+                    <keyword> void </keyword>
+                    <subroutineName> c </subroutineName>
+                    <symbol> ( </symbol>
+                    <parameterList>
+                    </parameterList>
+                    <symbol> ) </symbol>
+                    <subroutineBody>
+                        <symbol> { </symbol>
+                        <varDec>
+                        </varDec>
+                        <statements>
+                            <letStatement>
+                                <keyword> let </keyword>
+                                <varName> y </varName>
+                                <symbol> = </symbol>
+                                <expression>
+                                    <term>
+                                        <integerConstant> 2 </integerConstant>
+                                    </term> 
+                                </expression>
+                                <symbol> ; </symbol>
+                            </letStatement>
+                        </statements>
+                        <symbol> } </symbol>
+                    </subroutineBody>
+                </subroutineDec>
+                <symbol> } </symbol>
+            </class>''')
+
 if __name__ == '__main__':
     for test_case in test_instance:
         test_case()

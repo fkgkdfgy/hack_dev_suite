@@ -167,3 +167,24 @@ class SubroutineBodyHandler(SequenceHandler):
         if not self._valid_num:
             self._valid_num = [4]
         return self._valid_num
+
+class ClassHandler(SequenceHandler):
+    isTerminal = True
+    label = 'class'
+    @property
+    def check_chain(self):
+        if not self._check_chain:
+            self._check_chain = [
+                ('class',SupportHandler(('class', 'keyword'))),
+                ('className',ClassNameHandler()),
+                ('{',SupportHandler(('{', 'symbol'))),
+                ('mutli_classVarDec',MultiUnitHandler(base_handler=None,options_handlers=[ClassVarDecHandler()])),
+                ('mutli_subroutineDec',MultiUnitHandler(base_handler=None,options_handlers=[SubroutineDecHandler()])),
+                ('}',SupportHandler(('}', 'symbol')))
+            ]
+        return self._check_chain
+    @property
+    def valid_num(self):
+        if not self._valid_num:
+            self._valid_num = [6]
+        return self._valid_num

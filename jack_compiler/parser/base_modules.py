@@ -66,17 +66,17 @@ class SupportHandler(SimpleHandler):
             return 1
         return -1
 
-class NameHandler(BaseHandler):
+class NameHandler(SimpleHandler):
     isTerminal = False
     label = 'name'
 
-    def processXML(self, unstructured_xml):
-        self.xml = ''
-        if self.isTarget(unstructured_xml):
-            self.xml += common_convert('identifier')(unstructured_xml[0][0])
-            return self.toXML()
-        else:
-            raise BaseException("something wrong with {0}".format(unstructured_xml))
+    # def processXML(self, unstructured_xml):
+    #     self.xml = ''
+    #     if self.isTarget(unstructured_xml):
+    #         self.xml += common_convert('identifier')(unstructured_xml[0][0])
+    #         return self.toXML()
+    #     else:
+    #         raise BaseException("something wrong with {0}".format(unstructured_xml))
     
     def findTarget(self,unstructured_xml):
         if not unstructured_xml:
@@ -211,6 +211,17 @@ class SequenceHandler(BaseHandler):
             return self.toXML()
         else:
             raise BaseException("SequenceHandler: unstructured_xml is not a unit")
+        
+    def isTarget(self, unstructured_xml):
+        # 如果 check_chain 中的最后一个 handler 是 SimpleHandler，那么先用这个handler 去检查 unstructured_xml
+        if not self.check_chain:
+            raise BaseException('SequenceHandler: check_chain is empty')
+        if isinstance(self.check_chain[-1][1], SimpleHandler) and unstructured_xml:
+            fast_check = self.check_chain[-1][1].isTarget(unstructured_xml[-1:])
+            if not fast_check:
+                return False
+        # 如果不是 SimpleHandler，那么就用 BaseHandler 去检查 unstructured_xml
+        return BaseHandler.isTarget(self, unstructured_xml)
 
     def findTarget(self,unstructured_xml):
         find_flag = check_chain_with_func_list(unstructured_xml, [ handler for item_name, handler in self.check_chain])

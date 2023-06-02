@@ -117,5 +117,3 @@ class SubroutineBodyHandler(TemplateStatmentHandler):
         ('}',SupportHandler(('}', 'symbol')).findTarget, lambda x: SupportHandler(('}', 'symbol')).toXML())
     ]
     valid_num = [4]
-
-class 

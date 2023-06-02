@@ -3,17 +3,17 @@ class IOException(Exception):
     pass
 
 class TextIO:
-    def __init__(self,asm_file,hack_file):
-        self.text_file = asm_file
+    def __init__(self,jack_file,xml_file):
+        self.text_file = jack_file
         self.lines = []
         if self.text_file:
-            flow = open(asm_file,mode='r')
+            flow = open(jack_file,mode='r')
             self.lines = flow.readlines()
             flow.close()
         self.count = 0
         self.file_to_write = None
-        if hack_file:
-            self.file_to_write = open(hack_file,mode='w+')
+        if xml_file:
+            self.file_to_write = open(xml_file,mode='w+')
 
     def get_line(self):
         if not self.lines:
@@ -35,9 +35,9 @@ class TextIO:
         if self.file_to_write:
             self.file_to_write.close()
 
-    def reset(self,asm_file,hack_file):
+    def reset(self,jack_file,xml_file):
         self.close_write()
-        self.__init__(asm_file,hack_file)
+        self.__init__(jack_file,xml_file)
 
     def reset_line_count(self):
         self.count = 0

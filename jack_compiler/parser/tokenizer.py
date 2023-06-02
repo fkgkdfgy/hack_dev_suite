@@ -33,7 +33,7 @@ def removeComment(sentense):
 def removeHeadChar(line):
     if not line:
         return line
-    while line[0] in [' ','\r','\t']:
+    while line and line[0] in [' ','\r','\t']:
         line = line[1:]
     return line
 
@@ -92,8 +92,12 @@ class Tokenizer:
         raise ParserException('unable to recognize this word{0}'.format(word))
 
     def processLine(self,line):
+        if not line:
+            return '',[]
+
         line = removeComment(line)
         line = removeHeadChar(line)
+
         if not line:
             return '',[]
         

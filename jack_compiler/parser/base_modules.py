@@ -119,6 +119,8 @@ class MultiUnitHandler(BaseHandler):
     # 如果 base_unit == None , 就使用 option_units 来寻找结果
     # 如果 unstructured_xml == 0 , 就返回-1
     def findTarget(self,unstructured_xml):
+        if not unstructured_xml:
+            return -1
         if self.base_handler:
             base_unit_length = self.findBaseTarget(unstructured_xml)
             if base_unit_length < 0:
@@ -212,17 +214,6 @@ class SequenceHandler(BaseHandler):
         else:
             raise BaseException("SequenceHandler: unstructured_xml is not a unit")
         
-    def isTarget(self, unstructured_xml):
-        # 如果 check_chain 中的最后一个 handler 是 SimpleHandler，那么先用这个handler 去检查 unstructured_xml
-        if not self.check_chain:
-            raise BaseException('SequenceHandler: check_chain is empty')
-        if isinstance(self.check_chain[-1][1], SimpleHandler) and unstructured_xml:
-            fast_check = self.check_chain[-1][1].isTarget(unstructured_xml[-1:])
-            if not fast_check:
-                return False
-        # 如果不是 SimpleHandler，那么就用 BaseHandler 去检查 unstructured_xml
-        return BaseHandler.isTarget(self, unstructured_xml)
-
     def findTarget(self,unstructured_xml):
         find_flag = check_chain_with_func_list(unstructured_xml, [ handler for item_name, handler in self.check_chain])
         # 如果 find_flag 中的 True 的个数不在 valid_num 中，返回 False
@@ -238,6 +229,42 @@ class SequenceHandler(BaseHandler):
                     break
             return find_length   
         
+    def isTarget(self, unstructured_xml):
+        if self.headCheck(unstructured_xml) and self.tailCheck(unstructured_xml):
+            return BaseHandler.isTarget(self, unstructured_xml)
+        return False
+    
+    # 如果 check_chain 中的最后一个 handler 是 SimpleHandler，那么先用这个handler 去检查 unstructured_xml的最后一个字符
+    # 然后进行递归检查，直到handler不是SimpleHandler 或者 unstructured_xml 为空        
+    def tailCheck(self,unstructured_xml):
+        handlers = [handler for item_name, handler in self.check_chain]
+        def recursive_check(left_xml, handlers):
+            if not handlers:
+                return True
+            if isinstance(handlers[-1], SimpleHandler) and left_xml:
+                fast_check = handlers[-1].isTarget(left_xml[-1:])
+                if not fast_check:
+                    return False
+                return recursive_check(left_xml[:-1], handlers[:-1])
+            return True
+        return recursive_check(unstructured_xml, handlers)
+
+    # 如果 check_chain 中的第一个 handler 是 SimpleHandler，那么先用这个handler 去检查 unstructured_xml的第一个字符
+    # 如果 check_chain 中的第二个 handler 是 SimpleHandler，那么先用这个handler 去检查 unstructured_xml的第二个字符
+    # 像上面这样不断递归，直到handler不是SimpleHandler 或者 unstructured_xml 为空
+    def headCheck(self,unstructured_xml):
+        handlers = [handler for item_name, handler in self.check_chain]
+        def recursive_check(left_xml, handlers):
+            if not handlers:
+                return True
+            if isinstance(handlers[0], SimpleHandler) and left_xml:
+                fast_check = handlers[0].isTarget(left_xml[0:1])
+                if not fast_check:
+                    return False
+                return recursive_check(left_xml[1:], handlers[1:])
+            return True
+        return recursive_check(unstructured_xml, handlers)
+
 class SelectHandler(BaseHandler):
     isTerminal = False
     label = 'term'

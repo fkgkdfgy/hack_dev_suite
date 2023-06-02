@@ -90,7 +90,7 @@ class ExpressionHandler(SequenceHandler):
         if not hasattr(self, '_valid_num'):
             self._valid_num = [1]
         return self._valid_num
-
+        
 class PureFunctionCallHandler(SequenceHandler):
     isTerminal = False
     label = 'subroutineCall'
@@ -111,6 +111,13 @@ class PureFunctionCallHandler(SequenceHandler):
         if not hasattr(self, '_valid_num'):
             self._valid_num = [4]
         return self._valid_num
+    
+    def isTarget(self, unstructured_xml):
+        if self.headCheck(unstructured_xml) and \
+            self.tailCheck(unstructured_xml) and \
+             self.check_chain[2][1].isTarget(unstructured_xml[2:-1]):
+            return True
+        return False
 
 class ClassFunctionCallHandler(SequenceHandler):
     isTerminal = False
@@ -134,6 +141,13 @@ class ClassFunctionCallHandler(SequenceHandler):
         if not hasattr(self, '_valid_num'):
             self._valid_num = [6]
         return self._valid_num
+
+    def isTarget(self, unstructured_xml):
+        if self.headCheck(unstructured_xml) and \
+            self.tailCheck(unstructured_xml) and \
+             self.check_chain[4][1].isTarget(unstructured_xml[4:-1]):
+            return True
+        return False
 
 class TermExpressionHandler(SequenceHandler):
     isTerminal = False

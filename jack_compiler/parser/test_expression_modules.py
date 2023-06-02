@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+
 from expression_modules import *
 from tokenizer import Tokenizer
 
@@ -255,7 +259,6 @@ def test_expression_isNestedLongOpTermExpression():
     assert ExpressionHandler().findTarget(unstructured_xml) == len(unstructured_xml),'{0} != {1}'.format(ExpressionHandler().findTarget(unstructured_xml), len(unstructured_xml))
     # 测试 is
     assert ExpressionHandler().isTarget(unstructured_xml) == True
-
 
 @add_test_instance
 def test_expressionList_isEmpty():

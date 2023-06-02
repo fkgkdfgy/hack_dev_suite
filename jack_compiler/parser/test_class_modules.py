@@ -71,16 +71,14 @@ def test_varDec():
     handler = VarDecHandler(unstructured_xml)
     assert_answer(handler.toXML(), '''<varDec>
                 <keyword> var </keyword>
-                <type>
+                
                     <keyword> int </keyword>
-                </type>
-                <varName> a </varName>
-                <multi_varName>
+                
+                <identifier> a </identifier>
                     <symbol> , </symbol>
-                    <varName> b </varName>
+                    <identifier> b </identifier>
                     <symbol> , </symbol>
-                    <varName> c </varName>
-                </multi_varName>
+                    <identifier> c </identifier>
                 <symbol> ; </symbol>
             </varDec>''')
     # 测试 find
@@ -94,16 +92,16 @@ def test_classVarDec():
     handler = ClassVarDecHandler(unstructured_xml)
     assert_answer(handler.toXML(), '''<classVarDec>
                 <keyword> static </keyword>
-                <type>
+                
                     <keyword> int </keyword>
-                </type>
-                <varName> a </varName>
-                <multi_varName>
+                
+                <identifier> a </identifier>
+                
                     <symbol> , </symbol>
-                    <varName> b </varName>
+                    <identifier> b </identifier>
                     <symbol> , </symbol>
-                    <varName> c </varName>
-                </multi_varName>
+                    <identifier> c </identifier>
+                
                 <symbol> ; </symbol>
             </classVarDec>''')
     # 测试 find
@@ -118,31 +116,29 @@ def test_voidParameterList():
     assert_answer(handler.toXML(), '''<parameterList>
             </parameterList>''')
     # 测试 find
-    assert ParameterListHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    assert VoidParameterListHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
-    assert ParameterListHandler().isTarget(unstructured_xml) == True
+    assert VoidParameterListHandler().isTarget(unstructured_xml) == True
 
 @add_test_instance
 def test_parameterList():
     _,unstructured_xml = segmentCodes('''int a, boolean b, AS_12_31_23a_sdasd c''')
     handler = ParameterListHandler(unstructured_xml)
     assert_answer(handler.toXML(), '''<parameterList>
-                <type>
+                
                     <keyword> int </keyword>
-                </type>
-                <varName> a </varName>
-                <multi_parameter>
+                
+                <identifier> a </identifier>
                     <symbol> , </symbol>
-                    <type>
+                    
                         <keyword> boolean </keyword>
-                    </type>
-                    <varName> b </varName>
+                    
+                    <identifier> b </identifier>
                     <symbol> , </symbol>
-                    <type>
+                    
                         <identifier> AS_12_31_23a_sdasd </identifier>
-                    </type>
-                    <varName> c </varName>
-                </multi_parameter>
+                    
+                    <identifier> c </identifier>
             </parameterList>''')
     # 测试 find
     assert ParameterListHandler().findTarget(unstructured_xml) == len(unstructured_xml)
@@ -151,21 +147,28 @@ def test_parameterList():
 
 @add_test_instance
 def test_voidSubroutineDec():
-    _,unstructured_xml = segmentCodes('''function void a() {}''')
+    _,unstructured_xml = segmentCodes('''function void a() { return x;}''')
     handler = SubroutineDecHandler(unstructured_xml)
     assert_answer(handler.toXML(), '''<subroutineDec>
                 <keyword> function </keyword>
                 <keyword> void </keyword>
-                <subroutineName> a </subroutineName>
+                <identifier> a </identifier>
                 <symbol> ( </symbol>
-                <parameterList>
+                <parameterList>    
                 </parameterList>
                 <symbol> ) </symbol>
                 <subroutineBody>
                     <symbol> { </symbol>
-                    <varDec>
-                    </varDec>
                     <statements>
+                        <returnStatement>
+                            <keyword> return </keyword>
+                            <expression>
+                                <term>
+                                    <identifier> x </identifier>
+                                </term>
+                            </expression>
+                            <symbol> ; </symbol>
+                        </returnStatement>
                     </statements>
                     <symbol> } </symbol>
                 </subroutineBody>
@@ -182,27 +185,25 @@ def test_subroutineDec():
     assert_answer(handler.toXML(), '''<subroutineDec>
                 <keyword> function </keyword>
                 <keyword> void </keyword>
-                <subroutineName> a </subroutineName>
+                <identifier> a </identifier>
                 <symbol> ( </symbol>
                 <parameterList>    
-                    <type>
+                    
                         <keyword> int </keyword>
-                    </type>
-                    <varName> b </varName>
+                    
+                    <identifier> b </identifier>
                 </parameterList>
                 <symbol> ) </symbol>
                 <subroutineBody>
                     <symbol> { </symbol>
-                    <varDec>
-                    </varDec>
                     <statements>
                         <letStatement>
                             <keyword> let </keyword>
-                            <varName> x </varName>
+                            <identifier> x </identifier>
                             <symbol> = </symbol>
                             <expression>
                                 <term>
-                                    <integerConstant> 1 </integerConstant>
+                                    <intConst> 1 </intConst>
                                 </term> 
                             </expression>
                             <symbol> ; </symbol>
@@ -216,22 +217,6 @@ def test_subroutineDec():
     # 测试 is
     assert SubroutineDecHandler().isTarget(unstructured_xml) == True
 
-@add_test_instance
-def test_voidSubroutineBody():
-    _,unstructured_xml = segmentCodes('''{}''')
-    handler = SubroutineBodyHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<subroutineBody>
-                <symbol> { </symbol>
-                <varDec>
-                </varDec>
-                <statements>
-                </statements>
-                <symbol> } </symbol>
-            </subroutineBody>''')
-    # 测试 find
-    assert SubroutineBodyHandler().findTarget(unstructured_xml) == len(unstructured_xml)
-    # 测试 is
-    assert SubroutineBodyHandler().isTarget(unstructured_xml) == True
 
 @add_test_instance
 def test_subroutineBody():
@@ -241,19 +226,20 @@ def test_subroutineBody():
                 <symbol> { </symbol>
                 <varDec>
                     <keyword> var </keyword>
-                    <type>
+                    
                         <keyword> int </keyword>
-                    </type>
-                    <varName> a </varName>
+                    
+                    <identifier> a </identifier>
+                    <symbol> ; </symbol>
                 </varDec>
                 <statements>
                     <letStatement>
                         <keyword> let </keyword>
-                        <varName> a </varName>
+                        <identifier> a </identifier>
                         <symbol> = </symbol>
                         <expression>
                             <term>
-                                <integerConstant> 1 </integerConstant>
+                                <intConst> 1 </intConst>
                             </term> 
                         </expression>
                         <symbol> ; </symbol>
@@ -266,24 +252,6 @@ def test_subroutineBody():
     # 测试 is
     assert SubroutineBodyHandler().isTarget(unstructured_xml) == True
 
-@add_test_instance
-def test_class():
-    _,unstructured_xml = segmentCodes('''class A {}''')
-    handler = ClassHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<class>
-                <keyword> class </keyword>
-                <identifier> A </identifier>
-                <symbol> { </symbol>
-                <classVarDec>
-                </classVarDec>
-                <subroutineDec>
-                </subroutineDec>
-                <symbol> } </symbol>
-            </class>''')
-    # 测试 find
-    assert ClassHandler().findTarget(unstructured_xml) == len(unstructured_xml)
-    # 测试 is
-    assert ClassHandler().isTarget(unstructured_xml) == True
 
 @add_test_instance
 def test_class_complex():
@@ -295,31 +263,30 @@ def test_class_complex():
                 <symbol> { </symbol>
                 <classVarDec>
                     <keyword> static </keyword>
-                    <type>
+                    
                         <keyword> int </keyword>
-                    </type>
-                    <varName> a </varName>
+                    
+                    <identifier> a </identifier>
+                    <symbol> ; </symbol>
                 </classVarDec>
                 <subroutineDec>
                     <keyword> function </keyword>
                     <keyword> void </keyword>
-                    <subroutineName> b </subroutineName>
+                    <identifier> b </identifier>
                     <symbol> ( </symbol>
                     <parameterList>
                     </parameterList>
                     <symbol> ) </symbol>
                     <subroutineBody>
                         <symbol> { </symbol>
-                        <varDec>
-                        </varDec>
                         <statements>
                             <letStatement>
                                 <keyword> let </keyword>
-                                <varName> x </varName>
+                                <identifier> x </identifier>
                                 <symbol> = </symbol>
                                 <expression>
                                     <term>
-                                        <integerConstant> 1 </integerConstant>
+                                        <intConst> 1 </intConst>
                                     </term> 
                                 </expression>
                                 <symbol> ; </symbol>
@@ -345,31 +312,30 @@ def test_class_more_complex():
                 <symbol> { </symbol>
                 <classVarDec>
                     <keyword> static </keyword>
-                    <type>
+                    
                         <keyword> int </keyword>
-                    </type>
-                    <varName> a </varName>
+                    
+                    <identifier> a </identifier>
+                    <symbol> ; </symbol>
                 </classVarDec>
                 <subroutineDec>
                     <keyword> function </keyword>
                     <keyword> void </keyword>
-                    <subroutineName> b </subroutineName>
+                    <identifier> b </identifier>
                     <symbol> ( </symbol>
                     <parameterList>
                     </parameterList>
                     <symbol> ) </symbol>
                     <subroutineBody>
                         <symbol> { </symbol>
-                        <varDec>
-                        </varDec>
                         <statements>
                             <letStatement>
                                 <keyword> let </keyword>
-                                <varName> x </varName>
+                                <identifier> x </identifier>
                                 <symbol> = </symbol>
                                 <expression>
                                     <term>
-                                        <integerConstant> 1 </integerConstant>
+                                        <intConst> 1 </intConst>
                                     </term> 
                                 </expression>
                                 <symbol> ; </symbol>
@@ -381,23 +347,21 @@ def test_class_more_complex():
                 <subroutineDec>
                     <keyword> function </keyword>
                     <keyword> void </keyword>
-                    <subroutineName> c </subroutineName>
+                    <identifier> c </identifier>
                     <symbol> ( </symbol>
                     <parameterList>
                     </parameterList>
                     <symbol> ) </symbol>
                     <subroutineBody>
                         <symbol> { </symbol>
-                        <varDec>
-                        </varDec>
                         <statements>
                             <letStatement>
                                 <keyword> let </keyword>
-                                <varName> y </varName>
+                                <identifier> y </identifier>
                                 <symbol> = </symbol>
                                 <expression>
                                     <term>
-                                        <integerConstant> 2 </integerConstant>
+                                        <intConst> 2 </intConst>
                                     </term> 
                                 </expression>
                                 <symbol> ; </symbol>

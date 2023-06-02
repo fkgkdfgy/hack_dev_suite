@@ -51,11 +51,11 @@ class StaticOrFieldHandler(SelectHandler):
     label = 'static_or_field'
     @property
     def candidates(self):
-        if not self._candidates:
-            self._candidates = [
-                ('static',SupportHandler(('static', 'keyword'))),
-                ('field',SupportHandler(('field', 'keyword')))
-            ]
+        if not hasattr(self,'_candidates'):
+            self._candidates = {
+                'static':SupportHandler(('static', 'keyword')),
+                'field':SupportHandler(('field', 'keyword'))
+            }
         return self._candidates
 
 # classVarDec 的结构是 (static|field) type varName (, varName)* ;
@@ -64,55 +64,68 @@ class ClassVarDecHandler(SequenceHandler):
     label = 'classVarDec'
     @property
     def check_chain(self):
-        if not self._check_chain:
+        if not hasattr(self,'_check_chain'):
             self._check_chain = [
                 ('static_or_field',StaticOrFieldHandler()),
                 ('type',TypeHandler()),
                 ('mutli_varName',MultiUnitHandler(base_handler=VarNameHandler(),options_handlers=[SupportHandler((',', 'symbol')), VarNameHandler()])),
                 (';',SupportHandler((';', 'symbol')))
             ]
+
         return self._check_chain
 
     @property
     def valid_num(self):
-        if not self._valid_num:
-            self._valid_num = [2]
+        if not hasattr(self,'_valid_num'):
+            self._valid_num = [4]
         return self._valid_num
 
 class VoidParameterListHandler(EmptyHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'parameterList'
 
-class ParameterListHandler(SequenceHandler):
-    isTerminal = True
+class CommonParameterListHandler(SequenceHandler):
+    isTerminal = False
     label = 'parameterList'
 
     @property
     def check_chain(self):
-        if not self._check_chain:
+        if not hasattr(self,'_check_chain'):
             self._check_chain = [
                 ('type',TypeHandler()),
                 ('varName',VarNameHandler()),
-                ('mutli_parameter',MultiUnitHandler(base_unit=None,option_units=[SupportHandler((',', 'symbol')),TypeHandler(),VarNameHandler()]))
+                ('mutli_parameter',MultiUnitHandler(base_handler=None,options_handlers=[SupportHandler((',', 'symbol')),TypeHandler(),VarNameHandler()]))
             ]
         return self._check_chain
     @property
     def valid_num(self):
-        if not self._valid_num:
+        if not hasattr(self,'_valid_num'):
             self._valid_num = [2,3]
         return self._valid_num
+    
+class ParameterListHandler(SelectHandler):
+    isTerminal = True
+    label = 'parameterList'
+    @property
+    def candidates(self):
+        if not hasattr(self,'_candidates'):
+            self._candidates = {
+                'void':VoidParameterListHandler(),
+                'common':CommonParameterListHandler()
+            }
+        return self._candidates
 
 class ConstructorOrFunctionOrMethodHandler(SelectHandler):
     isTerminal = False
     label = 'constructor_or_function_or_method'
     @property
     def candidates(self):
-        if not self._candidates:
-            self._candidates = [
-                ('constructor',SupportHandler(('constructor', 'keyword'))),
-                ('function',SupportHandler(('function', 'keyword'))),
-                ('method',SupportHandler(('method', 'keyword')))
-            ]
+        if not hasattr(self,'_candidates'):
+            self._candidates = {
+                'constructor':SupportHandler(('constructor', 'keyword')),
+                'function':SupportHandler(('function', 'keyword')),
+                'method':SupportHandler(('method', 'keyword'))
+            }
         return self._candidates
     
 class VoidOrTypeHandler(SelectHandler):
@@ -120,11 +133,11 @@ class VoidOrTypeHandler(SelectHandler):
     label = 'void_or_type'
     @property
     def candidates(self):
-        if not self._candidates:
-            self._candidates = [
-                ('void',SupportHandler(('void', 'keyword'))),
-                ('type',TypeHandler())
-            ]
+        if not hasattr(self,'_candidates'):            
+            self._candidates =  {
+                'void':SupportHandler(('void', 'keyword')),
+                'type':TypeHandler()
+            }
         return self._candidates
 
 class SubroutineDecHandler(SequenceHandler):
@@ -132,7 +145,7 @@ class SubroutineDecHandler(SequenceHandler):
     label = 'subroutineDec'
     @property
     def check_chain(self):
-        if not self._check_chain:
+        if not hasattr(self,'_check_chain'):
             self._check_chain = [
                 ('constructor_or_function_or_method',ConstructorOrFunctionOrMethodHandler()),
                 ('void_or_type',VoidOrTypeHandler()),
@@ -145,16 +158,34 @@ class SubroutineDecHandler(SequenceHandler):
         return self._check_chain
     @property
     def valid_num(self):
-        if not self._valid_num:
+        if not hasattr(self,'_valid_num'):
             self._valid_num = [7]
         return self._valid_num
 
-class SubroutineBodyHandler(SequenceHandler):
-    isTerminal = True
+class SimpleSubroutineBodyHandler(SequenceHandler):
+    isTerminal = False
     label = 'subroutineBody'
     @property
     def check_chain(self):
-        if not self._check_chain:
+        if not hasattr(self,'_check_chain'):
+            self._check_chain = [
+                ('{',SupportHandler(('{', 'symbol'))),
+                ('statements',MultiStatementHandler()),
+                ('}',SupportHandler(('}', 'symbol')))
+            ]
+        return self._check_chain
+    @property
+    def valid_num(self):
+        if not hasattr(self,'_valid_num'):
+            self._valid_num = [3]
+        return self._valid_num
+
+class CommonSubroutineBodyHandler(SequenceHandler):
+    isTerminal = False
+    label = 'subroutineBody'
+    @property
+    def check_chain(self):
+        if not hasattr(self,'_check_chain'):
             self._check_chain = [
                 ('{',SupportHandler(('{', 'symbol'))),
                 ('mutli_varDec',MultiUnitHandler(base_handler=VarDecHandler(),options_handlers=[VarDecHandler()])),
@@ -164,16 +195,29 @@ class SubroutineBodyHandler(SequenceHandler):
         return self._check_chain
     @property
     def valid_num(self):
-        if not self._valid_num:
+        if not hasattr(self,'_valid_num'):
             self._valid_num = [4]
         return self._valid_num
+
+class SubroutineBodyHandler(SelectHandler):
+    isTerminal = True
+    label = 'subroutineBody'
+    
+    @property
+    def candidates(self):
+        if not hasattr(self,'_candidates'):
+            self._candidates = {
+                'simple':SimpleSubroutineBodyHandler(),
+                'common':CommonSubroutineBodyHandler()
+            }
+        return self._candidates
 
 class ClassHandler(SequenceHandler):
     isTerminal = True
     label = 'class'
     @property
     def check_chain(self):
-        if not self._check_chain:
+        if not hasattr(self,'_check_chain'):
             self._check_chain = [
                 ('class',SupportHandler(('class', 'keyword'))),
                 ('className',ClassNameHandler()),
@@ -185,6 +229,6 @@ class ClassHandler(SequenceHandler):
         return self._check_chain
     @property
     def valid_num(self):
-        if not self._valid_num:
+        if not hasattr(self,'_valid_num'):
             self._valid_num = [6]
         return self._valid_num

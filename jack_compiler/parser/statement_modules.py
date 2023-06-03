@@ -211,4 +211,10 @@ class StatementHandler(SelectHandler):
             }
         return self._candidates
     
-
+    def findTarget(self, unstructured_xml):
+        next_statement_index = len(unstructured_xml)
+        for word in unstructured_xml:
+            if word[0] in ['if','while','do','return','let']:
+                next_statement_index = unstructured_xml.index(word)
+                break
+        return SelectHandler.findTarget(self, unstructured_xml[:next_statement_index])

@@ -79,6 +79,59 @@ class ClassVarDecHandler(SequenceHandler):
         if not hasattr(self,'_valid_num'):
             self._valid_num = [4]
         return self._valid_num
+    
+    def processXML(self, unstructured_xml):
+        self.xml = ''
+        if StaticOrFieldHandler().isTarget(unstructured_xml[0:1]) > 0:
+            self.xml += StaticOrFieldHandler().processXML(unstructured_xml[0:1])
+            unstructured_xml = unstructured_xml[1:]
+        else:
+            raise ClassException('static or field is not found')
+        if TypeHandler().isTarget(unstructured_xml[0:1]) > 0:
+            self.xml += TypeHandler().processXML(unstructured_xml[0:1])
+            unstructured_xml = unstructured_xml[1:]
+        else:
+            raise ClassException('type is not found')
+        var_name_length = VarNameHandler().findTarget(unstructured_xml)
+        if var_name_length > 0:
+            self.xml += VarNameHandler().processXML(unstructured_xml[:var_name_length])
+            unstructured_xml = unstructured_xml[var_name_length:]
+        else:
+            raise ClassException('varName is not found')
+        while SupportHandler((',', 'symbol')).isTarget(unstructured_xml[0:1]) > 0:
+            self.xml += common_convert('symbol')(',')
+            unstructured_xml = unstructured_xml[1:]
+            var_name_length = VarNameHandler().findTarget(unstructured_xml)
+            if var_name_length > 0:
+                self.xml += VarNameHandler().processXML(unstructured_xml[:var_name_length])
+                unstructured_xml = unstructured_xml[var_name_length:]
+            else:
+                raise ClassException('varName is not found')
+        if SupportHandler((';', 'symbol')).isTarget(unstructured_xml[0:1]) > 0:
+            self.xml += common_convert('symbol')(';')
+            unstructured_xml = unstructured_xml[1:]
+        else:
+            raise ClassException('; is not found')
+
+    def findTarget(self, unstructured_xml):
+        try:
+            try:
+                last_semicolon_index = unstructured_xml.index((';', 'symbol'))
+            except ValueError:
+                raise ClassException('; is not found')
+            self.processXML(unstructured_xml[:last_semicolon_index + 1])
+        except ClassException as e:
+            return -1
+        return last_semicolon_index + 1
+    
+    def isTarget(self, unstructured_xml):
+        try:
+            self.processXML(unstructured_xml)
+        except ClassException as e:
+            print(e)
+            return False
+        return True
+
 
 class VoidParameterListHandler(EmptyHandler):
     isTerminal = False
@@ -114,6 +167,37 @@ class ParameterListHandler(SelectHandler):
                 'common':CommonParameterListHandler()
             }
         return self._candidates
+    
+    def processXML(self, unstructured_xml):
+        self.xml = ''
+        if not unstructured_xml:
+            return 
+        if CommonParameterListHandler().isTarget(unstructured_xml[0:1]) > 0:
+            self.xml += CommonParameterListHandler().processXML(unstructured_xml[0:1])
+            unstructured_xml = unstructured_xml[1:]
+        else:
+            raise ClassException('common parameterList is not found')
+        
+    def isTarget(self, unstructured_xml):
+        try:
+            self.processXML(unstructured_xml)
+        except ClassException as e:
+            print(e)
+            return False
+        return True
+    
+    def findTarget(self, unstructured_xml):
+        try:
+            # \
+            try:
+                brace_index = unstructured_xml.index(('}', 'symbol'))
+            except ValueError:
+                raise ClassException('} is not found')
+            self.processXML(unstructured_xml[:brace_index-1])
+        except ClassException as e:
+            print(e)
+            return -1
+        return brace_index-1        
 
 class ConstructorOrFunctionOrMethodHandler(SelectHandler):
     isTerminal = False
@@ -162,25 +246,68 @@ class SubroutineDecHandler(SequenceHandler):
             self._valid_num = [7]
         return self._valid_num
 
-class SimpleSubroutineBodyHandler(SequenceHandler):
-    isTerminal = False
-    label = 'subroutineBody'
-    @property
-    def check_chain(self):
-        if not hasattr(self,'_check_chain'):
-            self._check_chain = [
-                ('{',SupportHandler(('{', 'symbol'))),
-                ('statements',MultiStatementHandler()),
-                ('}',SupportHandler(('}', 'symbol')))
-            ]
-        return self._check_chain
-    @property
-    def valid_num(self):
-        if not hasattr(self,'_valid_num'):
-            self._valid_num = [3]
-        return self._valid_num
+    def processXML(self, unstructured_xml):
+        self.xml = ''
+        if ConstructorOrFunctionOrMethodHandler().isTarget(unstructured_xml[0:1]) > 0:
+            self.xml += ConstructorOrFunctionOrMethodHandler().processXML(unstructured_xml[0:1])
+            unstructured_xml = unstructured_xml[1:]
+        else:
+            raise ClassException('constructor or function or method is not found')
+        if VoidOrTypeHandler().isTarget(unstructured_xml[0:1]) > 0:
+            self.xml += VoidOrTypeHandler().processXML(unstructured_xml[0:1])
+            unstructured_xml = unstructured_xml[1:]
+        else:
+            raise ClassException('void or type is not found')
+        if SubroutineNameHandler().isTarget(unstructured_xml[0:1]) > 0:
+            self.xml += SubroutineNameHandler().processXML(unstructured_xml[0:1])
+            unstructured_xml = unstructured_xml[1:]
+        else:
+            raise ClassException('subroutineName is not found')
+        if SupportHandler(('(', 'symbol')).isTarget(unstructured_xml[0:1]) > 0:
+            self.xml += common_convert('symbol')('(')
+            unstructured_xml = unstructured_xml[1:]
+        else:
+            raise ClassException('( is not found')
+        param_list_length = ParameterListHandler().findTarget(unstructured_xml)
+        if param_list_length >= 0:
+            self.xml += ParameterListHandler().processXML(unstructured_xml[:param_list_length])
+            unstructured_xml = unstructured_xml[param_list_length:]
+        else:
+            raise ClassException('parameterList is not found')
+        if SupportHandler((')', 'symbol')).isTarget(unstructured_xml[0:1]) > 0:
+            self.xml += common_convert('symbol')(')')
+            unstructured_xml = unstructured_xml[1:]
+        else:
+            raise ClassException(') is not found')
+        subroutine_body_length = SubroutineBodyHandler().findTarget(unstructured_xml)
+        if subroutine_body_length >= 0:
+            self.xml += SubroutineBodyHandler().processXML(unstructured_xml[:subroutine_body_length])
+            unstructured_xml = unstructured_xml[subroutine_body_length:]
+        else:
+            raise ClassException('subroutineBody is not found')
 
-class CommonSubroutineBodyHandler(SequenceHandler):
+    def isTarget(self, unstructured_xml):
+        try:
+            self.processXML(unstructured_xml)
+        except ClassException as e:
+            print(e)
+            return False
+        return True
+
+    def findTarget(self, unstructured_xml):
+        try:
+            next_subroutineDec_index = len(unstructured_xml)
+            for word in unstructured_xml:
+                if word[0] in ['constructor', 'function', 'method']:
+                    next_subroutineDec_index = unstructured_xml.index(word)
+                    break
+            self.processXML(unstructured_xml[0:next_subroutineDec_index])
+        except ClassException as e:
+            print(e)
+            return -1
+        return next_subroutineDec_index
+    
+class SubroutineBodyHandler(SequenceHandler):
     isTerminal = False
     label = 'subroutineBody'
     @property
@@ -199,36 +326,111 @@ class CommonSubroutineBodyHandler(SequenceHandler):
             self._valid_num = [4]
         return self._valid_num
 
-class SubroutineBodyHandler(SelectHandler):
-    isTerminal = True
-    label = 'subroutineBody'
+    def processXML(self, unstructured_xml):
+        self.xml = ''
+        if SupportHandler(('{', 'symbol')).isTarget(unstructured_xml[0:1]) > 0:
+            self.xml += common_convert('symbol')('{')
+            unstructured_xml = unstructured_xml[1:]
+        else:
+            raise ClassException('{ is not found')
+        find_varDec_length = VarDecHandler().findTarget(unstructured_xml)
+        while find_varDec_length > 0:
+            self.xml += VarDecHandler().processXML(unstructured_xml[:find_varDec_length])
+            unstructured_xml = unstructured_xml[find_varDec_length:]
+            find_varDec_length = VarDecHandler().findTarget(unstructured_xml)
+        find_statment_length = StatementHandler().findTarget(unstructured_xml)
+        while find_statment_length > 0:
+            self.xml += StatementHandler().processXML(unstructured_xml[:find_statment_length])
+            unstructured_xml = unstructured_xml[find_statment_length:]
+            find_statment_length = StatementHandler().findTarget(unstructured_xml)
+
+        if SupportHandler(('}', 'symbol')).isTarget(unstructured_xml[0:1]) > 0:
+            self.xml += common_convert('symbol')('}')
+            unstructured_xml = unstructured_xml[1:]
+        else:
+            raise ClassException('} is not found')
+
+    def isTarget(self, unstructured_xml):
+        try:
+            self.processXML(unstructured_xml)
+        except ClassException as e:
+            print(e)
+            return False
+        return True
     
-    @property
-    def candidates(self):
-        if not hasattr(self,'_candidates'):
-            self._candidates = {
-                'simple':SimpleSubroutineBodyHandler(),
-                'common':CommonSubroutineBodyHandler()
-            }
-        return self._candidates
+    def findTarget(self, unstructured_xml):
+        try:
+            next_subroutineDec_index = len(unstructured_xml)
+            for word in unstructured_xml:
+                if word[0] in ['constructor', 'function', 'method']:
+                    next_subroutineDec_index = unstructured_xml.index(word)
+                    break
+            self.processXML(unstructured_xml[0:next_subroutineDec_index])
+        except ClassException as e:
+            print(e)
+            return -1
+        return next_subroutineDec_index
+    
 
 class ClassHandler(SequenceHandler):
     isTerminal = True
     label = 'class'
-    @property
-    def check_chain(self):
-        if not hasattr(self,'_check_chain'):
-            self._check_chain = [
-                ('class',SupportHandler(('class', 'keyword'))),
-                ('className',ClassNameHandler()),
-                ('{',SupportHandler(('{', 'symbol'))),
-                ('mutli_classVarDec',MultiUnitHandler(base_handler=None,options_handlers=[ClassVarDecHandler()])),
-                ('mutli_subroutineDec',MultiUnitHandler(base_handler=None,options_handlers=[SubroutineDecHandler()])),
-                ('}',SupportHandler(('}', 'symbol')))
-            ]
-        return self._check_chain
-    @property
-    def valid_num(self):
-        if not hasattr(self,'_valid_num'):
-            self._valid_num = [6]
-        return self._valid_num
+
+    def processXML(self,unstructured_xml):
+        self.xml = ''
+        # 1. 分割并转换XML class keyword
+        if SupportHandler(('class', 'keyword')).isTarget(unstructured_xml[:1]):
+            self.xml += common_convert('keyword')('class')
+            unstructured_xml = unstructured_xml[1:]
+        else:
+            raise ClassException('class keyword is not found')
+        # 2. 分割并转换XML className
+        if ClassNameHandler().isTarget(unstructured_xml[:1]):
+            self.xml += ClassNameHandler().processXML(unstructured_xml[:1])
+            unstructured_xml = unstructured_xml[1:]
+        else:
+            raise ClassException('className is not found')
+        # 3. 分割并转换XML {
+        if SupportHandler(('{', 'symbol')).isTarget(unstructured_xml[:1]):
+            self.xml += common_convert('symbol')('{')
+            unstructured_xml = unstructured_xml[1:]
+        else:
+            raise ClassException('{ is not found')
+        # 4. 分割并转换XML mutli_classVarDec
+        while ClassVarDecHandler().findTarget(unstructured_xml)>0:
+            find_length = ClassVarDecHandler().findTarget(unstructured_xml)
+            self.xml += ClassVarDecHandler().processXML(unstructured_xml[:find_length])
+            unstructured_xml = unstructured_xml[find_length:]
+        # 5. 分割并转换XML mutli_subroutineDec
+        while SubroutineDecHandler().findTarget(unstructured_xml)>0:
+            find_length = SubroutineDecHandler().findTarget(unstructured_xml)
+            self.xml += SubroutineDecHandler().processXML(unstructured_xml[:find_length])
+            unstructured_xml = unstructured_xml[find_length:]
+        # 6. 分割并转换XML }
+        if SupportHandler(('}', 'symbol')).isTarget(unstructured_xml[-1:]):
+            self.xml += common_convert('symbol')('}')
+            unstructured_xml = unstructured_xml[:-1]
+        else:
+            raise ClassException('} is not found')
+        
+    def isTarget(self, unstructured_xml):
+        try:
+            self.processXML(unstructured_xml)
+        except ClassException as e:
+            print(e)
+            return False
+        return True
+
+    def findTarget(self, unstructured_xml):
+        # 用class 关键字来判断是否为class
+        try:
+            next_class_index = len(unstructured_xml)
+            try:
+                next_class_index = unstructured_xml.index(('class', 'keyword'))
+            except ValueError:
+                pass
+            self.processXML(unstructured_xml[0:next_class_index])
+        except ClassException as e:
+            print(e)
+            return -1
+        return next_class_index

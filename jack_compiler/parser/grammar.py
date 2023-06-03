@@ -11,6 +11,7 @@ from class_modules import *
 class GrammarException(Exception):
     pass
 
+
 class Grammar:
 
     def __init__(self) :

@@ -39,7 +39,7 @@ def assert_answer(answer, result):
 def test_let_statement():
     _,unstructured_xml = segmentCodes('''let x = 1;''')
     handler = LetStatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement>''')
+    assert_answer(handler.toXML(), '''<letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement>''')
     # 测试 find
     assert LetStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -49,7 +49,7 @@ def test_let_statement():
 def test_let_statement_array():
     _,unstructured_xml = segmentCodes('''let x[1] = 1;''')
     handler = LetArrayStatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> [ </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ] </symbol> <symbol> = </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement>''')
+    assert_answer(handler.toXML(), '''<letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> [ </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ] </symbol> <symbol> = </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement>''')
     # 测试 find
     assert LetArrayStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -59,7 +59,7 @@ def test_let_statement_array():
 def test_if_statement():
     _,unstructured_xml = segmentCodes('''if (x) {let x = 1;}''')
     handler = IfStatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<ifStatement> <keyword> if </keyword> <symbol> ( </symbol> <expression> <term> <identifier> x </identifier> </term> </expression> <symbol> ) </symbol> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> </ifStatement>''')
+    assert_answer(handler.toXML(), '''<ifStatement> <keyword> if </keyword> <symbol> ( </symbol> <expression> <term> <identifier> x </identifier> </term> </expression> <symbol> ) </symbol> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> </ifStatement>''')
     # 测试 find
     assert IfStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -69,7 +69,7 @@ def test_if_statement():
 def test_if_else_statement():
     _,unstructured_xml = segmentCodes('''if (x) {let x = 1;} else {let x = 2;}''')
     handler = IfStatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<ifStatement> <keyword> if </keyword> <symbol> ( </symbol> <expression> <term> <identifier> x </identifier> </term> </expression> <symbol> ) </symbol> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> <keyword> else </keyword> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <intConst> 2 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> </ifStatement>''')
+    assert_answer(handler.toXML(), '''<ifStatement> <keyword> if </keyword> <symbol> ( </symbol> <expression> <term> <identifier> x </identifier> </term> </expression> <symbol> ) </symbol> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> <keyword> else </keyword> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 2 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> </ifStatement>''')
     # 测试 find
     assert IfStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -79,7 +79,7 @@ def test_if_else_statement():
 def test_while_statement():
     _,unstructured_xml = segmentCodes('''while (x) {let x = 1;}''')
     handler = WhileStatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<whileStatement> <keyword> while </keyword> <symbol> ( </symbol> <expression> <term> <identifier> x </identifier> </term> </expression> <symbol> ) </symbol> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> </whileStatement>''')
+    assert_answer(handler.toXML(), '''<whileStatement> <keyword> while </keyword> <symbol> ( </symbol> <expression> <term> <identifier> x </identifier> </term> </expression> <symbol> ) </symbol> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> </whileStatement>''')
     # 测试 find
     assert WhileStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -108,18 +108,18 @@ def test_return_statement():
 @add_test_instance
 def test_return_statement_void():
     _,unstructured_xml = segmentCodes('''return     ;''')
-    handler = VoidReturnStatementHandler(unstructured_xml)
+    handler = ReturnStatementHandler(unstructured_xml)
     assert_answer(handler.toXML(), '''<returnStatement> <keyword> return </keyword> <symbol> ; </symbol> </returnStatement>''')
     # 测试 find
-    assert VoidReturnStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    assert ReturnStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
-    assert VoidReturnStatementHandler().isTarget(unstructured_xml) == True
+    assert ReturnStatementHandler().isTarget(unstructured_xml) == True
 
 @add_test_instance
 def test_statement_let_statement():
     _,unstructured_xml = segmentCodes('''let x = 1;''')
     handler = StatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement>''')
+    assert_answer(handler.toXML(), '''<letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement>''')
     # 测试 find
     assert StatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -130,7 +130,7 @@ def test_statement_let_statement():
 def test_statement_let_statement_array():
     _,unstructured_xml = segmentCodes('''let x[1] = 1;''')
     handler = StatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> [ </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ] </symbol> <symbol> = </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement>''')
+    assert_answer(handler.toXML(), '''<letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> [ </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ] </symbol> <symbol> = </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement>''')
     # 测试 find
     assert StatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -140,7 +140,7 @@ def test_statement_let_statement_array():
 def test_statement_if_statement():
     _,unstructured_xml = segmentCodes('''if (x) {let x = 1;}''')
     handler = StatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<ifStatement> <keyword> if </keyword> <symbol> ( </symbol> <expression> <term> <identifier> x </identifier> </term> </expression> <symbol> ) </symbol> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> </ifStatement>''')
+    assert_answer(handler.toXML(), '''<ifStatement> <keyword> if </keyword> <symbol> ( </symbol> <expression> <term> <identifier> x </identifier> </term> </expression> <symbol> ) </symbol> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> </ifStatement>''')
     # 测试 find
     assert StatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -150,9 +150,9 @@ def test_statement_if_statement():
 def test_statement_if_statement_else():
     _,unstructured_xml = segmentCodes('''if (x) {let x = 1;} else {let x = 1;}''')
     handler = StatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<ifStatement> <keyword> if </keyword> <symbol> ( </symbol> <expression> <term> <identifier> x </identifier> </term> </expression> <symbol> ) </symbol> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> <keyword> else </keyword> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> </ifStatement>''')
+    assert_answer(handler.toXML(), '''<ifStatement> <keyword> if </keyword> <symbol> ( </symbol> <expression> <term> <identifier> x </identifier> </term> </expression> <symbol> ) </symbol> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> <keyword> else </keyword> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> </ifStatement>''')
     # 测试 find
-    assert StatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    assert StatementHandler().findTarget(unstructured_xml) == len(unstructured_xml), 'findTarget: {0} \n len(unstructured_xml): {1}'.format(StatementHandler().findTarget(unstructured_xml), len(unstructured_xml))
     # 测试 is
     assert StatementHandler().isTarget(unstructured_xml) == True
 
@@ -160,7 +160,7 @@ def test_statement_if_statement_else():
 def test_statement_while_statement():
     _,unstructured_xml = segmentCodes('''while (x) {let x = 1;}''')
     handler = StatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<whileStatement> <keyword> while </keyword> <symbol> ( </symbol> <expression> <term> <identifier> x </identifier> </term> </expression> <symbol> ) </symbol> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> </whileStatement>''')
+    assert_answer(handler.toXML(), '''<whileStatement> <keyword> while </keyword> <symbol> ( </symbol> <expression> <term> <identifier> x </identifier> </term> </expression> <symbol> ) </symbol> <symbol> { </symbol> <statements> <letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement> </statements> <symbol> } </symbol> </whileStatement>''')
     # 测试 find
     assert StatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -201,7 +201,7 @@ def test_statement_return_statement_void():
 def test_statements_let_statement_complex():
     _,unstructured_xml = segmentCodes('''let a=1; let A[1] = A_2[A_4(3+5)];''')
     handler = MultiStatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<statements> <letStatement> <keyword> let </keyword> <identifier> a </identifier> <symbol> = </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ; </symbol> </letStatement> <letStatement> <keyword> let </keyword> <identifier> A </identifier> <symbol> [ </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ] </symbol> <symbol> = </symbol> <expression> <term> <identifier> A_2 </identifier> <symbol> [ </symbol> <expression> <term> <identifier> A_4 </identifier> <symbol> ( </symbol> <expressionList> <expression> <term> <intConst> 3 </intConst> </term> <symbol> + </symbol> <term> <intConst> 5 </intConst> </term> </expression> </expressionList> <symbol> ) </symbol> </term> </expression> <symbol> ] </symbol></term> </expression> <symbol> ; </symbol> </letStatement> </statements>''')
+    assert_answer(handler.toXML(), '''<statements> <letStatement> <keyword> let </keyword> <identifier> a </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement> <letStatement> <keyword> let </keyword> <identifier> A </identifier> <symbol> [ </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ] </symbol> <symbol> = </symbol> <expression> <term> <identifier> A_2 </identifier> <symbol> [ </symbol> <expression> <term> <identifier> A_4 </identifier> <symbol> ( </symbol> <expressionList> <expression> <term> <integerConstant> 3 </integerConstant> </term> <symbol> + </symbol> <term> <integerConstant> 5 </integerConstant> </term> </expression> </expressionList> <symbol> ) </symbol> </term> </expression> <symbol> ] </symbol></term> </expression> <symbol> ; </symbol> </letStatement> </statements>''')
     # 测试 find
     assert MultiStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -212,7 +212,7 @@ def test_statements_let_statement_complex():
 def test_statements_if_statement_complex():
     _,unstructured_xml = segmentCodes('''let x = 1; if(x=1) {while (x) {let x = 1;} let x = 1;} else {let x = 1;}''')
     handler = MultiStatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<statements><letStatement><keyword>let</keyword><identifier>x</identifier><symbol>=</symbol><expression><term><intConst>1</intConst></term></expression><symbol>;</symbol></letStatement><ifStatement><keyword>if</keyword><symbol>(</symbol><expression><term><identifier>x</identifier></term><symbol>=</symbol><term><intConst>1</intConst></term></expression><symbol>)</symbol><symbol>{</symbol><statements><whileStatement><keyword>while</keyword><symbol>(</symbol><expression><term><identifier>x</identifier></term></expression><symbol>)</symbol><symbol>{</symbol><statements><letStatement><keyword>let</keyword><identifier>x</identifier><symbol>=</symbol><expression><term><intConst>1</intConst></term></expression><symbol>;</symbol></letStatement></statements><symbol>}</symbol></whileStatement><letStatement><keyword>let</keyword><identifier>x</identifier><symbol>=</symbol><expression><term><intConst>1</intConst></term></expression><symbol>;</symbol></letStatement></statements><symbol>}</symbol><keyword>else</keyword><symbol>{</symbol><statements><letStatement><keyword>let</keyword><identifier>x</identifier><symbol>=</symbol><expression><term><intConst>1</intConst></term></expression><symbol>;</symbol></letStatement></statements><symbol>}</symbol></ifStatement></statements>''')
+    assert_answer(handler.toXML(), '''<statements><letStatement><keyword>let</keyword><identifier>x</identifier><symbol>=</symbol><expression><term><integerConstant>1</integerConstant></term></expression><symbol>;</symbol></letStatement><ifStatement><keyword>if</keyword><symbol>(</symbol><expression><term><identifier>x</identifier></term><symbol>=</symbol><term><integerConstant>1</integerConstant></term></expression><symbol>)</symbol><symbol>{</symbol><statements><whileStatement><keyword>while</keyword><symbol>(</symbol><expression><term><identifier>x</identifier></term></expression><symbol>)</symbol><symbol>{</symbol><statements><letStatement><keyword>let</keyword><identifier>x</identifier><symbol>=</symbol><expression><term><integerConstant>1</integerConstant></term></expression><symbol>;</symbol></letStatement></statements><symbol>}</symbol></whileStatement><letStatement><keyword>let</keyword><identifier>x</identifier><symbol>=</symbol><expression><term><integerConstant>1</integerConstant></term></expression><symbol>;</symbol></letStatement></statements><symbol>}</symbol><keyword>else</keyword><symbol>{</symbol><statements><letStatement><keyword>let</keyword><identifier>x</identifier><symbol>=</symbol><expression><term><integerConstant>1</integerConstant></term></expression><symbol>;</symbol></letStatement></statements><symbol>}</symbol></ifStatement></statements>''')
     # 测试 find
     assert MultiStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -223,7 +223,7 @@ def test_statements_if_statement_complex():
 def test_statements_while_statement_complex():
     _,unstructured_xml = segmentCodes('''while (x) { if (x) {let x = 1;} else {let x = 1;}} let x = 1;''')
     handler = MultiStatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<statements><whileStatement><keyword>while</keyword><symbol>(</symbol><expression><term><identifier>x</identifier></term></expression><symbol>)</symbol><symbol>{</symbol><statements><ifStatement><keyword>if</keyword><symbol>(</symbol><expression><term><identifier>x</identifier></term></expression><symbol>)</symbol><symbol>{</symbol><statements><letStatement><keyword>let</keyword><identifier>x</identifier><symbol>=</symbol><expression><term><intConst>1</intConst></term></expression><symbol>;</symbol></letStatement></statements><symbol>}</symbol><keyword>else</keyword><symbol>{</symbol><statements><letStatement><keyword>let</keyword><identifier>x</identifier><symbol>=</symbol><expression><term><intConst>1</intConst></term></expression><symbol>;</symbol></letStatement></statements><symbol>}</symbol></ifStatement></statements><symbol>}</symbol></whileStatement><letStatement><keyword>let</keyword><identifier>x</identifier><symbol>=</symbol><expression><term><intConst>1</intConst></term></expression><symbol>;</symbol></letStatement></statements>''')
+    assert_answer(handler.toXML(), '''<statements><whileStatement><keyword>while</keyword><symbol>(</symbol><expression><term><identifier>x</identifier></term></expression><symbol>)</symbol><symbol>{</symbol><statements><ifStatement><keyword>if</keyword><symbol>(</symbol><expression><term><identifier>x</identifier></term></expression><symbol>)</symbol><symbol>{</symbol><statements><letStatement><keyword>let</keyword><identifier>x</identifier><symbol>=</symbol><expression><term><integerConstant>1</integerConstant></term></expression><symbol>;</symbol></letStatement></statements><symbol>}</symbol><keyword>else</keyword><symbol>{</symbol><statements><letStatement><keyword>let</keyword><identifier>x</identifier><symbol>=</symbol><expression><term><integerConstant>1</integerConstant></term></expression><symbol>;</symbol></letStatement></statements><symbol>}</symbol></ifStatement></statements><symbol>}</symbol></whileStatement><letStatement><keyword>let</keyword><identifier>x</identifier><symbol>=</symbol><expression><term><integerConstant>1</integerConstant></term></expression><symbol>;</symbol></letStatement></statements>''')
     # 测试 find
     assert MultiStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -233,7 +233,7 @@ def test_statements_while_statement_complex():
 def test_statements_do_statement_complex(): 
     _,unstructured_xml = segmentCodes('''do Output.printString("hello world"); do Output.printInt(1);''')
     handler = MultiStatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<statements><doStatement><keyword>do</keyword><identifier>Output</identifier><symbol>.</symbol><identifier>printString</identifier><symbol>(</symbol><expressionList><expression><term><stringConst>hello world</stringConst></term></expression></expressionList><symbol>)</symbol><symbol>;</symbol></doStatement><doStatement><keyword>do</keyword><identifier>Output</identifier><symbol>.</symbol><identifier>printInt</identifier><symbol>(</symbol><expressionList><expression><term><intConst>1</intConst></term></expression></expressionList><symbol>)</symbol><symbol>;</symbol></doStatement></statements>''')
+    assert_answer(handler.toXML(), '''<statements><doStatement><keyword>do</keyword><identifier>Output</identifier><symbol>.</symbol><identifier>printString</identifier><symbol>(</symbol><expressionList><expression><term><stringConstant>hello world</stringConstant></term></expression></expressionList><symbol>)</symbol><symbol>;</symbol></doStatement><doStatement><keyword>do</keyword><identifier>Output</identifier><symbol>.</symbol><identifier>printInt</identifier><symbol>(</symbol><expressionList><expression><term><integerConstant>1</integerConstant></term></expression></expressionList><symbol>)</symbol><symbol>;</symbol></doStatement></statements>''')
     # 测试 find
     assert MultiStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -243,7 +243,7 @@ def test_statements_do_statement_complex():
 def test_statements_return_statement_complex():
     _,unstructured_xml = segmentCodes('''return os.findcharformFile(file_1,tareget_line_num[3]); return;''')
     handler = MultiStatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<statements><returnStatement><keyword>return</keyword><expression><term><identifier>os</identifier><symbol>.</symbol><identifier>findcharformFile</identifier><symbol>(</symbol><expressionList><expression><term><identifier>file_1</identifier></term></expression><symbol>,</symbol><expression><term><identifier>tareget_line_num</identifier><symbol>[</symbol><expression><term><intConst>3</intConst></term></expression><symbol>]</symbol></term></expression></expressionList><symbol>)</symbol></term></expression><symbol>;</symbol></returnStatement><returnStatement><keyword>return</keyword><symbol>;</symbol></returnStatement></statements>''')
+    assert_answer(handler.toXML(), '''<statements><returnStatement><keyword>return</keyword><expression><term><identifier>os</identifier><symbol>.</symbol><identifier>findcharformFile</identifier><symbol>(</symbol><expressionList><expression><term><identifier>file_1</identifier></term></expression><symbol>,</symbol><expression><term><identifier>tareget_line_num</identifier><symbol>[</symbol><expression><term><integerConstant>3</integerConstant></term></expression><symbol>]</symbol></term></expression></expressionList><symbol>)</symbol></term></expression><symbol>;</symbol></returnStatement><returnStatement><keyword>return</keyword><symbol>;</symbol></returnStatement></statements>''')
     # 测试 find
     assert MultiStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -253,7 +253,7 @@ def test_statements_return_statement_complex():
 def test_statements_let_statement_complex():
     _,unstructured_xml = segmentCodes('''return os.findcharformFile(file_1,tareget_line_num[3]);''')
     handler = MultiStatementHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<statements><returnStatement><keyword>return</keyword><expression><term><identifier>os</identifier><symbol>.</symbol><identifier>findcharformFile</identifier><symbol>(</symbol><expressionList><expression><term><identifier>file_1</identifier></term></expression><symbol>,</symbol><expression><term><identifier>tareget_line_num</identifier><symbol>[</symbol><expression><term><intConst>3</intConst></term></expression><symbol>]</symbol></term></expression></expressionList><symbol>)</symbol></term></expression><symbol>;</symbol></returnStatement></statements>''')
+    assert_answer(handler.toXML(), '''<statements><returnStatement><keyword>return</keyword><expression><term><identifier>os</identifier><symbol>.</symbol><identifier>findcharformFile</identifier><symbol>(</symbol><expressionList><expression><term><identifier>file_1</identifier></term></expression><symbol>,</symbol><expression><term><identifier>tareget_line_num</identifier><symbol>[</symbol><expression><term><integerConstant>3</integerConstant></term></expression><symbol>]</symbol></term></expression></expressionList><symbol>)</symbol></term></expression><symbol>;</symbol></returnStatement></statements>''')
     # 测试 find
     assert MultiStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -268,6 +268,8 @@ def test_statements_if_statement_complex():
     assert MultiStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
     assert MultiStatementHandler().isTarget(unstructured_xml) == True
+
+
 
 if __name__ == '__main__':
 

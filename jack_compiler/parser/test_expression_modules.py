@@ -80,7 +80,7 @@ def test_varName():
 def test_constant():
     _,unstructured_xml = segmentCodes('''123''')
     handler = ConstantHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<intConst> 123 </intConst>''')
+    assert_answer(handler.toXML(), '''<integerConstant> 123 </integerConstant>''')
     # 测试 find
     assert ConstantHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -90,7 +90,7 @@ def test_constant():
 def test_term_isConstant():
     _,unstructured_xml = segmentCodes('''123''')
     handler = TermHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<term> <intConst> 123 </intConst> </term>''')
+    assert_answer(handler.toXML(), '''<term> <integerConstant> 123 </integerConstant> </term>''')
     # 测试 find
     assert TermHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -120,7 +120,7 @@ def test_term_isKeywordConstant():
 def test_term_isStringConstant():
     _,unstructured_xml = segmentCodes('''"abc"''')
     handler = TermHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<term> <stringConst> abc </stringConst> </term>''')
+    assert_answer(handler.toXML(), '''<term> <stringConstant> abc </stringConstant> </term>''')
     # 测试 find
     assert TermHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -151,7 +151,7 @@ def test_term_isTarget():
 def test_term_isArrayGet():
     _,unstructured_xml = segmentCodes('''a[1]''')
     handler = TermHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<term> <identifier> a </identifier> <symbol> [ </symbol> <expression> <term> <intConst> 1 </intConst> </term> </expression> <symbol> ] </symbol> </term>''')
+    assert_answer(handler.toXML(), '''<term> <identifier> a </identifier> <symbol> [ </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ] </symbol> </term>''')
     # 测试 find
     assert TermHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -203,14 +203,14 @@ def test_term_isNestedSubroutineCall3():
 def test_term_isNestedSubroutineCall4():
     _,unstructured_xml = segmentCodes('''A((a+b)=(3+5+6+c+d))''')
     handler = TermHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<term> <identifier> A </identifier> <symbol> ( </symbol> <expressionList> <expression> <term> <symbol> ( </symbol> <expression> <term> <identifier> a </identifier> </term> <symbol> + </symbol> <term> <identifier> b </identifier> </term> </expression> <symbol> ) </symbol> </term> <symbol> = </symbol> <term> <symbol> ( </symbol> <expression> <term> <intConst> 3 </intConst> </term> <symbol> + </symbol> <term> <intConst> 5 </intConst> </term> <symbol> + </symbol> <term> <intConst> 6 </intConst> </term> <symbol> + </symbol> <term> <identifier> c </identifier> </term> <symbol> + </symbol> <term> <identifier> d </identifier> </term> </expression> <symbol> ) </symbol> </term> </expression> </expressionList> <symbol> ) </symbol> </term>''')
+    assert_answer(handler.toXML(), '''<term> <identifier> A </identifier> <symbol> ( </symbol> <expressionList> <expression> <term> <symbol> ( </symbol> <expression> <term> <identifier> a </identifier> </term> <symbol> + </symbol> <term> <identifier> b </identifier> </term> </expression> <symbol> ) </symbol> </term> <symbol> = </symbol> <term> <symbol> ( </symbol> <expression> <term> <integerConstant> 3 </integerConstant> </term> <symbol> + </symbol> <term> <integerConstant> 5 </integerConstant> </term> <symbol> + </symbol> <term> <integerConstant> 6 </integerConstant> </term> <symbol> + </symbol> <term> <identifier> c </identifier> </term> <symbol> + </symbol> <term> <identifier> d </identifier> </term> </expression> <symbol> ) </symbol> </term> </expression> </expressionList> <symbol> ) </symbol> </term>''')
 
 # code for segementCodes ::= A(3+5)
 @add_test_instance
 def test_term_isNestedSubroutineCall5():
     _,unstructured_xml = segmentCodes('''A(3+5)''')
     handler = TermHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<term> <identifier> A </identifier> <symbol> ( </symbol> <expressionList> <expression> <term> <intConst> 3 </intConst> </term> <symbol> + </symbol> <term> <intConst> 5 </intConst> </term> </expression> </expressionList> <symbol> ) </symbol> </term>''')
+    assert_answer(handler.toXML(), '''<term> <identifier> A </identifier> <symbol> ( </symbol> <expressionList> <expression> <term> <integerConstant> 3 </integerConstant> </term> <symbol> + </symbol> <term> <integerConstant> 5 </integerConstant> </term> </expression> </expressionList> <symbol> ) </symbol> </term>''')
     # 测试 find
     assert TermHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
@@ -269,7 +269,7 @@ def test_expression_abnormal():
 def test_expression_isLongOpTermExpression():
     _,unstructured_xml = segmentCodes('''a+b+3+5+6+c+d''')
     handler = ExpressionHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<expression> <term> <identifier> a </identifier> </term> <symbol> + </symbol> <term> <identifier> b </identifier> </term> <symbol> + </symbol> <term> <intConst> 3 </intConst> </term> <symbol> + </symbol> <term> <intConst> 5 </intConst> </term> <symbol> + </symbol> <term> <intConst> 6 </intConst> </term> <symbol> + </symbol> <term> <identifier> c </identifier> </term> <symbol> + </symbol> <term> <identifier> d </identifier> </term> </expression>''')
+    assert_answer(handler.toXML(), '''<expression> <term> <identifier> a </identifier> </term> <symbol> + </symbol> <term> <identifier> b </identifier> </term> <symbol> + </symbol> <term> <integerConstant> 3 </integerConstant> </term> <symbol> + </symbol> <term> <integerConstant> 5 </integerConstant> </term> <symbol> + </symbol> <term> <integerConstant> 6 </integerConstant> </term> <symbol> + </symbol> <term> <identifier> c </identifier> </term> <symbol> + </symbol> <term> <identifier> d </identifier> </term> </expression>''')
     # 测试 find
     assert ExpressionHandler().findTarget(unstructured_xml) == len(unstructured_xml),'{0} != {1}'.format(ExpressionHandler().findTarget(unstructured_xml), len(unstructured_xml))
     # 测试 is
@@ -280,7 +280,17 @@ def test_expression_isLongOpTermExpression():
 def test_expression_isNestedLongOpTermExpression():
     _,unstructured_xml = segmentCodes('''a+b+3+5+(3+5)+c+A[123]''')
     handler = ExpressionHandler(unstructured_xml)
-    assert_answer(handler.toXML(), '''<expression> <term> <identifier> a </identifier> </term> <symbol> + </symbol> <term> <identifier> b </identifier> </term> <symbol> + </symbol> <term> <intConst> 3 </intConst> </term> <symbol> + </symbol> <term> <intConst> 5 </intConst> </term> <symbol> + </symbol> <term> <symbol> ( </symbol> <expression> <term> <intConst> 3 </intConst> </term> <symbol> + </symbol> <term> <intConst> 5 </intConst> </term> </expression> <symbol> ) </symbol> </term> <symbol> + </symbol> <term> <identifier> c </identifier> </term> <symbol> + </symbol> <term> <identifier> A </identifier> <symbol> [ </symbol> <expression> <term> <intConst> 123 </intConst> </term> </expression> <symbol> ] </symbol> </term> </expression>''')
+    assert_answer(handler.toXML(), '''<expression> <term> <identifier> a </identifier> </term> <symbol> + </symbol> <term> <identifier> b </identifier> </term> <symbol> + </symbol> <term> <integerConstant> 3 </integerConstant> </term> <symbol> + </symbol> <term> <integerConstant> 5 </integerConstant> </term> <symbol> + </symbol> <term> <symbol> ( </symbol> <expression> <term> <integerConstant> 3 </integerConstant> </term> <symbol> + </symbol> <term> <integerConstant> 5 </integerConstant> </term> </expression> <symbol> ) </symbol> </term> <symbol> + </symbol> <term> <identifier> c </identifier> </term> <symbol> + </symbol> <term> <identifier> A </identifier> <symbol> [ </symbol> <expression> <term> <integerConstant> 123 </integerConstant> </term> </expression> <symbol> ] </symbol> </term> </expression>''')
+    # 测试 find
+    assert ExpressionHandler().findTarget(unstructured_xml) == len(unstructured_xml),'{0} != {1}'.format(ExpressionHandler().findTarget(unstructured_xml), len(unstructured_xml))
+    # 测试 is
+    assert ExpressionHandler().isTarget(unstructured_xml) == True
+
+@add_test_instance
+def test_expression_actual_instance():
+    _,unstructured_xml = segmentCodes('''i | j''')
+    handler = ExpressionHandler(unstructured_xml)
+    assert_answer(handler.toXML(), '''<expression> <term> <identifier> i </identifier> </term> <symbol> | </symbol> <term> <identifier> j </identifier> </term> </expression>''')
     # 测试 find
     assert ExpressionHandler().findTarget(unstructured_xml) == len(unstructured_xml),'{0} != {1}'.format(ExpressionHandler().findTarget(unstructured_xml), len(unstructured_xml))
     # 测试 is

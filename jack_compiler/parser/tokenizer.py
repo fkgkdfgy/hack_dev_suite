@@ -28,6 +28,9 @@ def removeComment(sentense):
     if '//' in result:
         index = result.find('//')
         result = result[0:index]
+    if '/*' in result:
+        index = result.find('/*')
+        result = result[0:index]
     return result
 
 def removeHeadChar(line):
@@ -41,8 +44,8 @@ class Tokenizer:
     def __init__(self) -> None:
         self.token_func={'keyword':(isKeyword,common_convert('keyword')),
                          'symbol':(isSymbol,common_convert('symbol')),
-                         'intConst':(isIntegerConstant,common_convert('intConst')),
-                         'stringConst':(isStringConstant,string_convert),
+                         'integerConstant':(isIntegerConstant,common_convert('integerConstant')),
+                         'stringConstant':(isStringConstant,string_convert),
                          'identifier':(isIdentifer,common_convert('identifier'))}
 
     def segementLine(self,line,words):
@@ -52,6 +55,7 @@ class Tokenizer:
         
         # 如果第一个符号是 “ 向后寻找下一个 ” 然后取这其中的word(带着两边双引号)
         # ie. line == "words" words.append("words")
+        # quotation mark is a symbol, so it will be saved in words
         if line[0] == '"':
             index = line[1:].find('"')
             if index<0:
@@ -87,7 +91,7 @@ class Tokenizer:
             judge_func,convert_func = value
             if judge_func(word):
                 xml = convert_func(word)
-                word_and_type=(word if not key == 'stringConst' else word[1:-1],key)
+                word_and_type=(word if not key == 'stringConstant' else word[1:-1],key)
                 return xml,word_and_type 
         raise ParserException('unable to recognize this word{0}'.format(word))
 

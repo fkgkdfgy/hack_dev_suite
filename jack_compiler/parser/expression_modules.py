@@ -38,7 +38,7 @@ class ConstantHandler(SimpleHandler):
     def findTarget(self,unstructured_xml):
         if not unstructured_xml:
             return -1
-        elif unstructured_xml[0][1] in ['intConst','stringConst']:
+        elif unstructured_xml[0][1] in ['integerConstant','stringConstant']:
             return 1
         else:
             return -1

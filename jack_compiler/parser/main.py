@@ -7,62 +7,35 @@ from tokenizer import Tokenizer
 from grammar import Grammar
 
 if __name__ == '__main__':
+
+    arg_parser = argparse.ArgumentParser(description='jack file is used to translate .jack into .xml file')
+    arg_parser.add_argument('--file',default=None,type=str)
+    args = arg_parser.parse_args()
+
+    if args.file and not os.path.exists(args.file):
+        raise Exception('jack file:{0} is not existed'.format(args.file))
     
-    abs_file_path = ''
-    structured_xml_path = ''
+    abs_file_path = args.file
+    structured_xml_path = args.file + ".xml"
     
-    # text_io = TextIO(abs_file_path,structured_xml_path)
+    text_io = TextIO(abs_file_path,structured_xml_path)
     tokenizer = Tokenizer()
     grammar = Grammar()
     
-    # lines = text_io.get_all_lines()
-
-    text = '''
-    // This file is part of www.nand2tetris.org
-    // and the book "The Elements of Computing Systems"
-    // by Nisan and Schocken, MIT Press.
-    // File name: projects/10/ArrayTest/Main.jack
-
-    // (identical to projects/09/Average/Main.jack)
-
-    // ** Computes the average of a sequence of integers. */
-    class Main {
-        function void main() {
-            var Array a;
-            var int length;
-            var int i, sum;
-        
-        let length = Keyboard.readInt("HOW MANY NUMBERS? ");
-        let a = Array.new(length);
-        let i = 0;
-        
-        while (i < length) {
-            let a[i] = Keyboard.readInt("ENTER THE NEXT NUMBER: ");
-            let i = i + 1;
-        }
-        
-        let i = 0;
-        let sum = 0;
-        
-        while (i < length) {
-            let sum = sum + a[i];
-            let i = i + 1;
-        }
-        
-        do Output.printString("THE AVERAGE IS: ");
-        do Output.printInt(sum / length);
-        do Output.println();
-        
-        return;
-        }
-    }   
-    '''
+    lines = text_io.get_all_lines()
 
     total_unstructured_xml = []
-    lines = text.split('\n')
     for line in lines:
+        print(line)
         _,unstructured_xml = tokenizer.processLine(line)
         total_unstructured_xml.extend(unstructured_xml)
     print('total unstructured xml : \n{0}'.format(total_unstructured_xml))
+
+    for index, word in  enumerate(total_unstructured_xml):
+        if word[0] == 'class':
+            total_unstructured_xml = total_unstructured_xml[index:]
+
     structured_xml = grammar.processXML(total_unstructured_xml)
 
+    text_io.write_line(structured_xml)
+    text_io.close_write()

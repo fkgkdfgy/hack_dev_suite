@@ -20,10 +20,11 @@ class Grammar:
 
     def processXML(self, unstructured_tokens):
         self.xml = ''
+        print(unstructured_tokens)
         while unstructured_tokens:
             find_length = self.class_handler.findTarget(unstructured_tokens)
             if find_length <0:
-                raise GrammarException('Cannot parse the following tokens: %s' % unstructured_tokens[:10])
+                raise GrammarException('Cannot find any target in unstructured_tokens')
             structured_xml = self.class_handler.processXML(unstructured_tokens[:find_length])
             self.xml += structured_xml
             unstructured_tokens = unstructured_tokens[find_length:]

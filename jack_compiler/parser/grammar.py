@@ -22,10 +22,7 @@ class Grammar:
         self.xml = ''
         print(unstructured_tokens)
         while unstructured_tokens:
-            find_length = self.class_handler.findTarget(unstructured_tokens)
-            if find_length <0:
-                raise GrammarException('Cannot find any target in unstructured_tokens')
-            structured_xml = self.class_handler.processXML(unstructured_tokens[:find_length])
-            self.xml += structured_xml
-            unstructured_tokens = unstructured_tokens[find_length:]
+            class_handler = ClassHandler()
+            unstructured_tokens = class_handler.processXML(unstructured_tokens)
+            self.xml += class_handler.toXML()
         return self.xml

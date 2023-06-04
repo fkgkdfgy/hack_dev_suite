@@ -67,40 +67,21 @@ class ClassVarDecHandler(SequenceHandler):
             ]
         return self._check_chain
 
-class VoidParameterListHandler(EmptyHandler):
-    isTerminal = False
-    label = 'parameterList'
-
-class CommonParameterListHandler(SequenceHandler):
-    isTerminal = False
-    label = 'parameterList'
-
-    @property
-    def check_chain(self):
-        if not hasattr(self,'_check_chain'):
-            self._check_chain = [
-                ('type',TypeHandler()),
-                ('varName',VarNameHandler()),
-                ('mutli_parameter',MultiUnitHandler(base_handler=None,options_handlers=[SupportHandler((',', 'symbol')),TypeHandler(),VarNameHandler()]))
-            ]
-        return self._check_chain
-    @property
-    def valid_num(self):
-        if not hasattr(self,'_valid_num'):
-            self._valid_num = [2,3]
-        return self._valid_num
-    
-class ParameterListHandler(SelectHandler):
+class ParameterListHandler(MultiStatementHandler):
     isTerminal = True
     label = 'parameterList'
+    empty_allowed = True
     @property
-    def candidates(self):
-        if not hasattr(self,'_candidates'):
-            self._candidates = {
-                'void':VoidParameterListHandler(),
-                'common':CommonParameterListHandler()
-            }
-        return self._candidates
+    def base_handler(self):
+        if not hasattr(self,'_base_handler'):
+            self._base_handler = [TypeHandler(),VarNameHandler()]
+        return self._base_handler
+    
+    @property
+    def options_handlers(self):
+        if not hasattr(self,'_options_handlers'):
+            self._options_handlers = [SupportHandler((',', 'symbol')),TypeHandler(),VarNameHandler()]
+        return self._options_handlers
     
 class ConstructorOrFunctionOrMethodHandler(SelectHandler):
     isTerminal = False
@@ -143,7 +124,23 @@ class SubroutineDecHandler(SequenceHandler):
                 ('subroutineBody',SubroutineBodyHandler())
             ]
         return self._check_chain
+
+class MultiVarDecHandler(MultiUnitHandler):
+    isTerminal = False
+    label = 'multi_varDec'
+    empty_allowed = True
+    @property
+    def base_handler(self):
+        if not hasattr(self,'_base_handler'):
+            self._base_handler = VarDecHandler()
+        return self._base_handler
     
+    @property
+    def options_handlers(self):
+        if not hasattr(self,'_options_handlers'):
+            self._options_handlers = [VarDecHandler()]
+        return self._options_handlers
+
 class SubroutineBodyHandler(SequenceHandler):
     isTerminal = True
     label = 'subroutineBody'
@@ -152,11 +149,43 @@ class SubroutineBodyHandler(SequenceHandler):
         if not hasattr(self,'_check_chain'):
             self._check_chain = [
                 ('{',SupportHandler(('{', 'symbol'))),
-                ('mutli_varDec',MultiUnitHandler(base_handler=VarDecHandler(),options_handlers=[VarDecHandler()])),
+                ('mutli_varDec',MultiVarDecHandler()),
                 ('statements',MultiStatementHandler()),
                 ('}',SupportHandler(('}', 'symbol')))
             ]
         return self._check_chain
+
+class MultiClassVarDecHandler(MultiUnitHandler):
+    isTerminal = False
+    label = 'multi_classVarDec'
+    empty_allowed = True
+    @property
+    def base_handler(self):
+        if not hasattr(self,'_base_handler'):
+            self._base_handler = ClassVarDecHandler()
+        return self._base_handler
+    
+    @property
+    def options_handlers(self):
+        if not hasattr(self,'_options_handlers'):
+            self._options_handlers = [ClassVarDecHandler()]
+        return self._options_handlers
+
+class MultiSubroutineDecHandler(MultiUnitHandler):
+    isTerminal = False
+    label = 'multi_subroutineDec'
+    empty_allowed = True
+    @property
+    def base_handler(self):
+        if not hasattr(self,'_base_handler'):
+            self._base_handler = SubroutineDecHandler()
+        return self._base_handler
+    
+    @property
+    def options_handlers(self):
+        if not hasattr(self,'_options_handlers'):
+            self._options_handlers = [SubroutineDecHandler()]
+        return self._options_handlers
 
 class ClassHandler(SequenceHandler):
     isTerminal = True
@@ -169,8 +198,8 @@ class ClassHandler(SequenceHandler):
                 ('class',SupportHandler(('class', 'keyword'))),
                 ('className',ClassNameHandler()),
                 ('{',SupportHandler(('{', 'symbol'))),
-                ('mutli_classVarDec',MultiUnitHandler(base_handler=ClassVarDecHandler(),options_handlers=[ClassVarDecHandler()])),
-                ('mutli_subroutineDec',MultiUnitHandler(base_handler=SubroutineDecHandler(),options_handlers=[SubroutineDecHandler()])),
+                ('mutli_classVarDec',MultiClassVarDecHandler()),
+                ('mutli_subroutineDec',MultiSubroutineDecHandler()),
                 ('}',SupportHandler(('}', 'symbol')))
             ]
         return self._check_chain

@@ -105,6 +105,10 @@ class MultiUnitHandler(BaseHandler):
 
     def __init__(self,unstructed_xml=None):
         self.children = []
+        if isinstance(self.base_handler,list):
+            for handler in self.base_handler:
+                if isinstance(handler,EmptyHandler):
+                    raise BaseException('base_handler can not be EmptyHandler')
         if isinstance(self.base_handler,EmptyHandler):
             raise BaseException('base_handler can not be EmptyHandler')
         if len(self.options_handlers) == 0:
@@ -116,14 +120,27 @@ class MultiUnitHandler(BaseHandler):
     
     def processXML(self, unstructured_xml):
         self.children = []
-        try:
-            base_handler = copy.deepcopy(self.base_handler)
-            unstructured_xml = base_handler.processXML(unstructured_xml)
-            self.children.append(base_handler)
-        except Exception as e:
-            if not self.empty_allowed:
-                raise BaseException('MultiUnitHandler can not find base_handler in {0}'.format(unstructured_xml))
-            return unstructured_xml
+        if isinstance(self.base_handler,list):
+            pair_children = []
+            unprocessed_xml = unstructured_xml
+            for handler in self.base_handler:
+                try:
+                    unstructured_xml = handler.processXML(unstructured_xml)
+                    pair_children.append(handler)
+                except Exception as e:
+                    if not self.empty_allowed:
+                        raise BaseException('MultiUnitHandler can not find base_handler in {0}'.format(unstructured_xml))
+                    return unprocessed_xml
+            self.children.extend(pair_children)
+        else:
+            try:
+                base_handler = copy.deepcopy(self.base_handler)
+                unstructured_xml = base_handler.processXML(unstructured_xml)
+                self.children.append(base_handler)
+            except Exception as e:
+                if not self.empty_allowed:
+                    raise BaseException('MultiUnitHandler can not find base_handler in {0}'.format(unstructured_xml))
+                return unstructured_xml
         while unstructured_xml:
             try:
                 pair_children = []

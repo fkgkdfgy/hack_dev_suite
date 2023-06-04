@@ -24,6 +24,24 @@ class TypeHandler(SimpleHandler):
             return 1
         return -1
 
+class MultiVarNameHandler(MultiUnitHandler):
+    isTerminal = False
+    label = 'multi_varName'
+    empty_allowed = False
+
+    @property
+    def base_handler(self):
+        if not hasattr(self,'_base_handler'):
+            self._base_handler = VarNameHandler()
+        return self._base_handler
+    
+    @property
+    def options_handlers(self):
+        if not hasattr(self,'_options_handlers'):
+            self._options_handlers = [SupportHandler((',', 'symbol')),VarNameHandler()]
+        return self._options_handlers
+
+
 # verDec 的结构是 type varName (, varName)* ;
 class VarDecHandler(SequenceHandler):
     isTerminal = True
@@ -35,7 +53,7 @@ class VarDecHandler(SequenceHandler):
             self._check_chain = [
                 ('var',SupportHandler(('var', 'keyword'))),
                 ('type',TypeHandler()),
-                ('mutli_varName',MultiUnitHandler(base_handler=VarNameHandler(),options_handlers=[SupportHandler((',','symbol')),VarNameHandler()])),
+                ('mutli_varName',MultiVarNameHandler()),
                 (';',SupportHandler((';', 'symbol')))
             ]
         return self._check_chain
@@ -62,7 +80,7 @@ class ClassVarDecHandler(SequenceHandler):
             self._check_chain = [
                 ('static_or_field',StaticOrFieldHandler()),
                 ('type',TypeHandler()),
-                ('mutli_varName',MultiUnitHandler(base_handler=VarNameHandler(),options_handlers=[SupportHandler((',', 'symbol')), VarNameHandler()])),
+                ('mutli_varName',MultiVarNameHandler()),
                 (';',SupportHandler((';', 'symbol')))
             ]
         return self._check_chain

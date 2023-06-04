@@ -55,42 +55,42 @@ class UnaryOpHandler(SimpleHandler):
         else:
             return -1
 
-class ExpressionListHandler(SelectHandler):
+class ExpressionListHandler(MultiUnitHandler):
     isTerminal = True
     label = 'expressionList'
     
+    empty_allowed = True
+
     @property
-    def candidates(self):
-        if not hasattr(self, '_candidates'):
-            self._candidates = {
-                'isEmpty': EmptyHandler(),
-                'isMultiExpression': MultiUnitHandler(ExpressionHandler(),[SupportHandler((',' , 'symbol')),ExpressionHandler()])
-            }
-        return self._candidates
+    def base_handler(self):
+        if not hasattr(self, '_base_handler'):
+            self._base_handler = ExpressionHandler()
+        return self._base_handler
     
-    def findTarget(self, unstructured_xml):
-        if not unstructured_xml:
-            return 0
-        return SelectHandler.findTarget(self, unstructured_xml)
-    
-class ExpressionHandler(SequenceHandler):
+    @property
+    def options_handlers(self):
+        if not hasattr(self, '_options_handlers'):
+            self._options_handlers = [SupportHandler((',', 'symbol')), ExpressionHandler()]
+        return self._options_handlers
+
+
+class ExpressionHandler(MultiUnitHandler):
     isTerminal = True
     label = 'expression'
+
+    empty_allowed = False
+    @property
+    def base_handler(self):
+        if not hasattr(self, '_base_handler'):
+            self._base_handler = TermHandler()
+        return self._base_handler
     
     @property
-    def check_chain(self):
-        if not hasattr(self, '_check_chain'):
-            self._check_chain = [
-                ('isMultiOpTerm', MultiUnitHandler(TermHandler(None),[OpHandler(None),TermHandler(None)]))
-            ]
-        return self._check_chain
-    
-    @property
-    def valid_num(self):
-        if not hasattr(self, '_valid_num'):
-            self._valid_num = [1]
-        return self._valid_num
-        
+    def options_handlers(self):
+        if not hasattr(self, '_options_handlers'):
+            self._options_handlers = [OpHandler(), TermHandler()]
+        return self._options_handlers
+
 class PureFunctionCallHandler(SequenceHandler):
     isTerminal = False
     label = 'subroutineCall'
@@ -105,20 +105,7 @@ class PureFunctionCallHandler(SequenceHandler):
                 (')',SupportHandler((')', 'symbol')))
             ]
         return self._check_chain
-    
-    @property
-    def valid_num(self):
-        if not hasattr(self, '_valid_num'):
-            self._valid_num = [4]
-        return self._valid_num
-    
-    def isTarget(self, unstructured_xml):
-        if self.headCheck(unstructured_xml) and \
-            self.tailCheck(unstructured_xml) and \
-             self.check_chain[2][1].isTarget(unstructured_xml[2:-1]):
-            return True
-        return False
-
+        
 class ClassFunctionCallHandler(SequenceHandler):
     isTerminal = False
     label = 'subroutineCall'
@@ -135,30 +122,11 @@ class ClassFunctionCallHandler(SequenceHandler):
                 (')',SupportHandler((')', 'symbol')))
             ]
         return self._check_chain
-    
-    @property
-    def valid_num(self):
-        if not hasattr(self, '_valid_num'):
-            self._valid_num = [6]
-        return self._valid_num
-
-    def isTarget(self, unstructured_xml):
-        if self.headCheck(unstructured_xml) and \
-            self.tailCheck(unstructured_xml) and \
-             self.check_chain[4][1].isTarget(unstructured_xml[4:-1]):
-            return True
-        return False
 
 class TermExpressionHandler(SequenceHandler):
     isTerminal = False
     label = 'term'
 
-    @property
-    def valid_num(self):
-        if not hasattr(self, '_valid_num'):
-            self._valid_num = [3]
-        return self._valid_num
-    
     @property
     def check_chain(self):
         if not hasattr(self, '_check_chain'):
@@ -169,17 +137,10 @@ class TermExpressionHandler(SequenceHandler):
             ]
         return self._check_chain
     
-
 class ArrayGetHandler(SequenceHandler):
     isTerminal = False
     label = 'term'
 
-    @property
-    def valid_num(self):
-        if not hasattr(self, '_valid_num'):
-            self._valid_num = [4]
-        return self._valid_num
-    
     @property
     def check_chain(self):
         if not hasattr(self, '_check_chain'):
@@ -195,12 +156,6 @@ class UnaryOpTermHandler(SequenceHandler):
     isTerminal = False
     label = 'term'
 
-    @property
-    def valid_num(self):
-        if not hasattr(self, '_valid_num'):
-            self._valid_num = [2]
-        return self._valid_num
-    
     @property
     def check_chain(self):
         if not hasattr(self, '_check_chain'):
@@ -218,14 +173,14 @@ class TermHandler(SelectHandler):
     def candidates(self):
         if not hasattr(self, '_candidates'):
             self._candidates = {
-                'isConstant':  ConstantHandler(),
-                'isName': VarNameHandler(),
-                'isKeywordConstant': KeywordConstantHandler(),
                 'isPureFunctionCall': PureFunctionCallHandler(),
                 'isClassFunctionCall': ClassFunctionCallHandler(),
+                'isConstant':  ConstantHandler(),
                 'isExpression': TermExpressionHandler(),
-                'isArrayGet': ArrayGetHandler(),
                 'isUnaryOpTerm': UnaryOpTermHandler(),
+                'isName': VarNameHandler(),
+                'isKeywordConstant': KeywordConstantHandler(),
+                'isArrayGet': ArrayGetHandler(),
             }
         return self._candidates
 

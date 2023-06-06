@@ -15,14 +15,25 @@ class GrammarException(Exception):
 class Grammar:
 
     def __init__(self) :
-        self.class_handler = ClassHandler()
+        self.class_list = []
         self.xml = ''
 
     def processXML(self, unstructured_tokens):
-        self.xml = ''
         print(unstructured_tokens)
         while unstructured_tokens:
             class_handler = ClassHandler()
             unstructured_tokens = class_handler.processXML(unstructured_tokens)
-            self.xml += class_handler.toXML()
-        return self.xml
+            self.class_list.append(class_handler)
+        return self.toXML()
+
+    def toXML(self):
+        result = ''
+        for class_handler in self.class_list:
+            result += class_handler.toXML()
+        return result
+    
+    def toCode(self):
+        result = ''
+        for class_handler in self.class_list:
+            result += class_handler.toCode()
+        return result

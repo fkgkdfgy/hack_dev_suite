@@ -40,7 +40,9 @@ class MultiVarNameHandler(MultiUnitHandler):
         if not hasattr(self,'_options_handlers'):
             self._options_handlers = [SupportHandler((',', 'symbol')),VarNameHandler()]
         return self._options_handlers
-
+    
+    def registrateSymbolTable(self):
+        pass
 
 # verDec 的结构是 type varName (, varName)* ;
 class VarDecHandler(SequenceHandler):
@@ -57,6 +59,14 @@ class VarDecHandler(SequenceHandler):
                 (';',SupportHandler((';', 'symbol')))
             ]
         return self._check_chain
+    
+    def registrateSymbolTable(self):
+        var_dec_type = self.children[1].getWord()
+        index = 0
+        for var_name in self.children[2].children:
+            var_name = var_name.getWord()                
+            self.symbol_table[var_name] = ('local',var_dec_type,index)
+            index += 1
 
 class StaticOrFieldHandler(SelectHandler):
     isTerminal = False
@@ -69,6 +79,10 @@ class StaticOrFieldHandler(SelectHandler):
                 'field':SupportHandler(('field', 'keyword'))
             }
         return self._candidates
+    
+    def getAttr(self):
+        return self.selected_candidate.getWord()
+
 
 # classVarDec 的结构是 (static|field) type varName (, varName)* ;
 class ClassVarDecHandler(SequenceHandler):
@@ -84,6 +98,15 @@ class ClassVarDecHandler(SequenceHandler):
                 (';',SupportHandler((';', 'symbol')))
             ]
         return self._check_chain
+
+    def registrateSymbolTable(self):
+        var_dec_attr = self.children[0].getAttr()
+        var_dec_type = self.children[1].getWord()
+        index = 0
+        for var_name in self.children[2].children:
+            var_name = var_name.getWord()                
+            self.symbol_table[var_name] = (var_dec_attr,var_dec_type,index)
+            index += 1
 
 class ParameterListHandler(MultiStatementHandler):
     isTerminal = True
@@ -101,6 +124,36 @@ class ParameterListHandler(MultiStatementHandler):
             self._options_handlers = [SupportHandler((',', 'symbol')),TypeHandler(),VarNameHandler()]
         return self._options_handlers
     
+    def registrateSymbolTable(self):
+        for child in self.children:
+            child.registrateSymbolTable()
+        
+        child_symbol_table = {}
+        for child in self.chuildren:
+            child_symbol_table[child] = child.symbol_table
+        
+        # symbol_table ::= 'varname':(attr,type,index) 三个属性
+        # 这里需要把相同attr 的 variable 对应的index 进行累加来形成新的symbol table
+        for child in self.children:
+            for var_name in child.symbol_table:
+                if var_name in self.symbol_table:
+                    raise ClassException('var_name: {} has been defined'.format(var_name))
+                self.symbol_table[var_name] = child.symbol_table[var_name]
+        
+        # 更新 argument 的index
+        argument_index = 0
+        for var_name in self.symbol_table:
+            if self.symbol_table[var_name][0] == 'argument':
+                self.symbol_table[var_name][2] = argument_index
+                argument_index += 1
+
+    def getParameterNum(self):
+        count = 0
+        for child in self.children:
+            if isinstance(child,VarNameHandler):
+                count += 1
+        return count
+
 class ConstructorOrFunctionOrMethodHandler(SelectHandler):
     isTerminal = False
     label = 'constructor_or_function_or_method'
@@ -113,7 +166,10 @@ class ConstructorOrFunctionOrMethodHandler(SelectHandler):
                 'method':SupportHandler(('method', 'keyword'))
             }
         return self._candidates
-    
+
+    def getSubroutineAttr(self):
+        return self.selected_candidate.getWord()
+
 class VoidOrTypeHandler(SelectHandler):
     isTerminal = False
     label = 'void_or_type'
@@ -142,6 +198,56 @@ class SubroutineDecHandler(SequenceHandler):
                 ('subroutineBody',SubroutineBodyHandler())
             ]
         return self._check_chain
+
+    def toConstructor(self, class_name, object_inner_size):
+        return_code = ''
+        subroutine_name = self.children[2].getWord()
+        local_var_num = self.children[6].getLocalVarNum()
+        return_code += 'function {}.{} {}\n'.format(class_name,subroutine_name,local_var_num)
+        return_code += 'push constant {}\n'.format(object_inner_size)
+        return_code += 'call Memory.alloc 1\n'
+        return_code += 'pop pointer 0\n'
+        return_code += self.children[7].toCode(class_name)
+        return return_code
+
+    def toFunction(self, class_name):
+        return_code = ''
+        subroutine_name = self.children[2].getWord()
+        local_var_num = self.children[6].getLocalVarNum()
+        return_code += 'function {}.{} {}\n'.format(class_name,subroutine_name,local_var_num)
+        return_code += self.children[7].toCode(class_name)
+        return return_code
+
+    def toMethod(self, class_name):
+        return_code = ''
+        subroutine_name = self.children[2].getWord()
+        local_var_num = self.children[6].getLocalVarNum()
+        return_code += 'function {}.{} {}\n'.format(class_name,subroutine_name,local_var_num)
+        return_code += 'push argument 0\n'
+        return_code += 'pop pointer 0\n'
+        return_code += self.children[7].toCode(class_name)
+        return return_code
+
+    def registrateSymbolTable(self):
+        parameter_list = self.children[4]
+        parameter_list.registrateSymbolTable()
+        self.symbol_table = parameter_list.symbol_table
+
+
+    def toCode(self, class_name):
+        self.registrateSymbolTable()
+        result_code = ''
+        subroutine_type = self.children[0].getSubroutineAttr()
+        if subroutine_type == 'constructor':
+            result_code = self.toConstructor(class_name)
+        elif subroutine_type == 'function':
+            result_code = self.toFunction(class_name)
+        elif subroutine_type == 'method':
+            result_code = self.toMethod(class_name)
+        else:
+            raise ClassException('subroutine_type: {} is not supported'.format(subroutine_type))
+        return result_code
+
 
 class MultiVarDecHandler(MultiUnitHandler):
     isTerminal = False
@@ -173,6 +279,17 @@ class SubroutineBodyHandler(SequenceHandler):
             ]
         return self._check_chain
 
+    def getLocalVarNum(self):
+        return len(self.symbol_table)    
+
+    def registrateSymbolTable(self):
+        multi_var_dec = self.children[1]
+        multi_var_dec.registrateSymbolTable()
+        self.symbol_table = multi_var_dec.symbol_table
+
+    def toCode(self, *args, **kwargs):
+        pass
+
 class MultiClassVarDecHandler(MultiUnitHandler):
     isTerminal = False
     label = 'multi_classVarDec'
@@ -188,6 +305,34 @@ class MultiClassVarDecHandler(MultiUnitHandler):
         if not hasattr(self,'_options_handlers'):
             self._options_handlers = [ClassVarDecHandler()]
         return self._options_handlers
+    
+    def registrateSymbolTable(self):
+        for child in self.children:
+            child.registrateSymbolTable()
+        
+        child_symbol_table = {}
+        for child in self.chuildren:
+            child_symbol_table[child] = child.symbol_table
+        
+        # symbol_table ::= 'varname':(attr,type,index) 三个属性
+        # 这里需要把相同attr 的 variable 对应的index 进行累加来形成新的symbol table
+        for child in self.children:
+            for var_name in child.symbol_table:
+                if var_name in self.symbol_table:
+                    raise ClassException('var_name: {} has been defined'.format(var_name))
+                self.symbol_table[var_name] = child.symbol_table[var_name]
+        # 更新static 的index
+        static_index = 0
+        for var_name in self.symbol_table:
+            if self.symbol_table[var_name][0] == 'static':
+                self.symbol_table[var_name][2] = static_index
+                static_index += 1
+        # 更新field 的index
+        field_index = 0
+        for var_name in self.symbol_table:
+            if self.symbol_table[var_name][0] == 'field':
+                self.symbol_table[var_name][2] = field_index
+                field_index += 1
 
 class MultiSubroutineDecHandler(MultiUnitHandler):
     isTerminal = False
@@ -204,6 +349,12 @@ class MultiSubroutineDecHandler(MultiUnitHandler):
         if not hasattr(self,'_options_handlers'):
             self._options_handlers = [SubroutineDecHandler()]
         return self._options_handlers
+    
+    def toCode(self, class_name):
+        result_code = ''
+        for child in self.children:
+            result_code += child.toCode(class_name)
+        return result_code
 
 class ClassHandler(SequenceHandler):
     isTerminal = True
@@ -221,3 +372,19 @@ class ClassHandler(SequenceHandler):
                 ('}',SupportHandler(('}', 'symbol')))
             ]
         return self._check_chain
+
+    def toCode(self):
+        self.registrateSymbolTable()
+        class_code = ''
+        for child in self.children:
+            class_code += child.toCode(self.getClassName())
+        return class_code
+
+    def registrateSymbolTable(self):
+        class_var_dec = self.children[3]
+        class_var_dec.registrateSymbolTable()
+        self.symbol_table = class_var_dec.symbol_table
+    
+    def getClassName(self):
+        return self.children[1].getWord()
+        

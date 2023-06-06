@@ -107,13 +107,13 @@ class IfStatementHandler(SequenceHandler):
         pure_if_statement_handler = copy.deepcopy(self.check_chain[0][1])
         try:
             unstructured_xml = pure_if_statement_handler.processXML(unstructured_xml)
-            self.children.append(pure_if_statement_handler)
+            self.addChildren([pure_if_statement_handler])
         except Exception as e:
             raise StatementException('IfStatementHandler can not find pureIfStatement in {0}'.format(unstructured_xml))
         pure_else_statement_handler = copy.deepcopy(self.check_chain[1][1])
         try:
             unstructured_xml = pure_else_statement_handler.processXML(unstructured_xml)
-            self.children.append(pure_else_statement_handler)
+            self.addChildren([pure_else_statement_handler])
         except Exception as e:
             pass
         return unstructured_xml

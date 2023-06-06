@@ -13,6 +13,9 @@ class BaseHandler:
     def __init__(self, unstructed_xml=None):
         if unstructed_xml:
             self.xml = ''
+            self.symbol_table = None
+            self.parent_handler = None
+            self.children = []
             self.processXML(unstructed_xml)
         else:
             self.xml = ''
@@ -48,7 +51,25 @@ class BaseHandler:
             return False
         if not left_xml:
             return True
+    
+    def toCode(self,*args,**kwargs):
+        pass
+
+    def registrateSymbolTable(self):
+        pass
+
+    def searchVariable(self,symbol):
+        if self.symbol_table and symbol in self.symbol_table:
+            return self.symbol_table[symbol]
         
+        if not self.parent_handler:
+            raise BaseException('can not find symbol {0} in symbol table chain'.format(symbol))
+        
+        return self.parent_handler.searchVariable(symbol)
+
+    def addChildren(self,children):
+        self.children.extend(children)
+
 class SimpleHandler(BaseHandler):
     isTerminal = False
     label = 'simple'
@@ -69,6 +90,15 @@ class SimpleHandler(BaseHandler):
             return common_convert(self.word_and_type[1])(self.word_and_type[0])
         raise BaseException("self.word_and_type is not defined in SimpleHandler")
 
+    def getWord(self):
+        if self.word_and_type:
+            return self.word_and_type[0]
+        raise BaseException("self.word_and_type is not defined in SimpleHandler")
+    
+    def getWordType(self):
+        if self.word_and_type:
+            return self.word_and_type[1]
+        raise BaseException("self.word_and_type is not defined in SimpleHandler")
 
 class SupportHandler(SimpleHandler):
     isTerminal = False
@@ -131,12 +161,12 @@ class MultiUnitHandler(BaseHandler):
                     if not self.empty_allowed:
                         raise BaseException('MultiUnitHandler can not find base_handler in {0}'.format(unstructured_xml))
                     return unprocessed_xml
-            self.children.extend(pair_children)
+            self.addChildren(pair_children)
         else:
             try:
                 base_handler = copy.deepcopy(self.base_handler)
                 unstructured_xml = base_handler.processXML(unstructured_xml)
-                self.children.append(base_handler)
+                self.addChildren([base_handler])
             except Exception as e:
                 if not self.empty_allowed:
                     raise BaseException('MultiUnitHandler can not find base_handler in {0}'.format(unstructured_xml))
@@ -149,7 +179,7 @@ class MultiUnitHandler(BaseHandler):
                     handler = copy.deepcopy(option_handler)
                     unstructured_xml = handler.processXML(unstructured_xml)
                     pair_children.append(handler)
-                self.children.extend(pair_children)
+                self.addChildren(pair_children)
             except Exception as e:
                 unstructured_xml = unprocessed_xml
                 break
@@ -202,7 +232,7 @@ class SequenceHandler(BaseHandler):
                 unstructured_xml = handler.processXML(unstructured_xml)
             except Exception as e:
                 raise BaseException('Sequence Component {0} processXML error: {0} '.format(item_name, e))
-            self.children.append(handler)
+            self.addChildren([handler])
         return unstructured_xml
 
     def toXML(self):

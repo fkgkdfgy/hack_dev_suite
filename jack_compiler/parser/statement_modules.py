@@ -21,6 +21,12 @@ class MultiStatementHandler(MultiUnitHandler):
             self._options_handlers = [StatementHandler()]
         return self._options_handlers
 
+    def toCode(self):
+        result = ''
+        for child in self.children:
+            result += child.toCode()
+        return result
+
 class LetStatementHandler(SequenceHandler):
     isTerminal = True
     label = 'letStatement'
@@ -36,6 +42,9 @@ class LetStatementHandler(SequenceHandler):
                 (';',SupportHandler((';', 'symbol')))
             ]
         return self._check_chain
+    
+    def toCode(self):
+        pass
 
 class LetArrayStatementHandler(SequenceHandler):
     isTerminal = True
@@ -56,6 +65,8 @@ class LetArrayStatementHandler(SequenceHandler):
             ]
         return self._check_chain
     
+    def toCode(self, *args, **kwargs):
+        pass
 class PureIfStatementHandler(SequenceHandler):
     isTerminal = False
     label = 'ifStatement'

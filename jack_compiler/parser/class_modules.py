@@ -232,7 +232,9 @@ class SubroutineDecHandler(SequenceHandler):
         parameter_list = self.children[4]
         parameter_list.registrateSymbolTable()
         self.symbol_table = parameter_list.symbol_table
-
+        # 将type 更改为 argument
+        for var_name in self.symbol_table:
+            self.symbol_table[var_name] = ('argument',self.symbol_table[var_name][1],self.symbol_table[var_name][2])
 
     def toCode(self, class_name):
         self.registrateSymbolTable()
@@ -264,6 +266,24 @@ class MultiVarDecHandler(MultiUnitHandler):
         if not hasattr(self,'_options_handlers'):
             self._options_handlers = [VarDecHandler()]
         return self._options_handlers
+    
+    def registrateSymbolTable(self):
+        for child in self.children:
+            child.registrateSymbolTable()
+        
+        # symbol_table ::= 'varname':(attr,type,index) 三个属性
+        # 这里需要把相同attr 的 variable 对应的index 进行累加来形成新的symbol table
+        for child in self.children:
+            for var_name in child.symbol_table:
+                if var_name in self.symbol_table:
+                    raise ClassException('var_name: {} has been defined'.format(var_name))
+                self.symbol_table[var_name] = child.symbol_table[var_name]
+        # 更新local 的index
+        local_index = 0
+        for var_name in self.symbol_table:
+            if self.symbol_table[var_name][0] == 'local':
+                self.symbol_table[var_name][2] = local_index
+                local_index += 1
 
 class SubroutineBodyHandler(SequenceHandler):
     isTerminal = True
@@ -288,7 +308,11 @@ class SubroutineBodyHandler(SequenceHandler):
         self.symbol_table = multi_var_dec.symbol_table
 
     def toCode(self, *args, **kwargs):
-        pass
+        self.registrateSymbolTable()
+        return_code = ''
+        for child in self.children[2].children:
+            return_code += child.toCode(*args, **kwargs)
+        return return_code
 
 class MultiClassVarDecHandler(MultiUnitHandler):
     isTerminal = False
@@ -309,10 +333,6 @@ class MultiClassVarDecHandler(MultiUnitHandler):
     def registrateSymbolTable(self):
         for child in self.children:
             child.registrateSymbolTable()
-        
-        child_symbol_table = {}
-        for child in self.chuildren:
-            child_symbol_table[child] = child.symbol_table
         
         # symbol_table ::= 'varname':(attr,type,index) 三个属性
         # 这里需要把相同attr 的 variable 对应的index 进行累加来形成新的symbol table

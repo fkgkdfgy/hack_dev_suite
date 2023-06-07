@@ -167,8 +167,6 @@ class ConstructorOrFunctionOrMethodHandler(SelectHandler):
             }
         return self._candidates
 
-    def getSubroutineAttr(self):
-        return self.selected_candidate.getWord()
 
 class VoidOrTypeHandler(SelectHandler):
     isTerminal = False
@@ -199,33 +197,33 @@ class SubroutineDecHandler(SequenceHandler):
             ]
         return self._check_chain
 
-    def toConstructor(self, class_name, object_inner_size):
+    def toConstructor(self,class_name, object_member_variable_size):
         return_code = ''
         subroutine_name = self.children[2].getWord()
         local_var_num = self.children[6].getLocalVarNum()
         return_code += 'function {}.{} {}\n'.format(class_name,subroutine_name,local_var_num)
-        return_code += 'push constant {}\n'.format(object_inner_size)
+        return_code += 'push constant {}\n'.format(object_member_variable_size)
         return_code += 'call Memory.alloc 1\n'
         return_code += 'pop pointer 0\n'
-        return_code += self.children[7].toCode(class_name)
+        return_code += self.children[7].toCode()
         return return_code
 
-    def toFunction(self, class_name):
+    def toFunction(self,class_name):
         return_code = ''
         subroutine_name = self.children[2].getWord()
         local_var_num = self.children[6].getLocalVarNum()
         return_code += 'function {}.{} {}\n'.format(class_name,subroutine_name,local_var_num)
-        return_code += self.children[7].toCode(class_name)
+        return_code += self.children[7].toCode()
         return return_code
 
-    def toMethod(self, class_name):
+    def toMethod(self,class_name):
         return_code = ''
         subroutine_name = self.children[2].getWord()
         local_var_num = self.children[6].getLocalVarNum()
         return_code += 'function {}.{} {}\n'.format(class_name,subroutine_name,local_var_num)
         return_code += 'push argument 0\n'
         return_code += 'pop pointer 0\n'
-        return_code += self.children[7].toCode(class_name)
+        return_code += self.children[7].toCode()
         return return_code
 
     def registrateSymbolTable(self):
@@ -236,12 +234,17 @@ class SubroutineDecHandler(SequenceHandler):
         for var_name in self.symbol_table:
             self.symbol_table[var_name] = ('argument',self.symbol_table[var_name][1],self.symbol_table[var_name][2])
 
-    def toCode(self, class_name):
+    def toCode(self):
         self.registrateSymbolTable()
+        parent_class = self.getParentClass()
+        if not parent_class:
+            raise ClassException('parent_class is not defined')
+        class_name = parent_class.getClassName()
         result_code = ''
         subroutine_type = self.children[0].getSubroutineAttr()
         if subroutine_type == 'constructor':
-            result_code = self.toConstructor(class_name)
+            member_variable_size = len(parent_class.getMemberVariableList())
+            result_code = self.toConstructor(class_name,member_variable_size)
         elif subroutine_type == 'function':
             result_code = self.toFunction(class_name)
         elif subroutine_type == 'method':
@@ -250,6 +253,20 @@ class SubroutineDecHandler(SequenceHandler):
             raise ClassException('subroutine_type: {} is not supported'.format(subroutine_type))
         return result_code
 
+    def getParentClass(self):
+        handler_might_be_class = self.parent_handler
+        while handler_might_be_class and not isinstance(handler_might_be_class,ClassHandler):
+            handler_might_be_class = handler_might_be_class.parent_handler
+        if not handler_might_be_class:
+            raise ClassException('parent_class is not define, so the search stoped with not handler_might_be_class')
+        return handler_might_be_class
+
+    def getAttr(self):
+        attr_handler = self.children[0]
+        return self.attr_handler.selected_candidate.getWord()
+    
+    def getName(self):
+        return self.children[2].getWord()
 
 class MultiVarDecHandler(MultiUnitHandler):
     isTerminal = False
@@ -307,11 +324,11 @@ class SubroutineBodyHandler(SequenceHandler):
         multi_var_dec.registrateSymbolTable()
         self.symbol_table = multi_var_dec.symbol_table
 
-    def toCode(self, *args, **kwargs):
+    def toCode(self):
         self.registrateSymbolTable()
         return_code = ''
         for child in self.children[2].children:
-            return_code += child.toCode(*args, **kwargs)
+            return_code += child.toCode()
         return return_code
 
 class MultiClassVarDecHandler(MultiUnitHandler):
@@ -370,15 +387,19 @@ class MultiSubroutineDecHandler(MultiUnitHandler):
             self._options_handlers = [SubroutineDecHandler()]
         return self._options_handlers
     
-    def toCode(self, class_name):
+    def toCode(self):
         result_code = ''
         for child in self.children:
-            result_code += child.toCode(class_name)
+            result_code += child.toCode()
         return result_code
 
 class ClassHandler(SequenceHandler):
     isTerminal = True
     label = 'class'
+
+    def __init__(self, unstructed_xml=None):
+        self.function_list = {}
+        SequenceHandler.__init__(self,unstructed_xml)
 
     @property
     def check_chain(self):
@@ -392,12 +413,13 @@ class ClassHandler(SequenceHandler):
                 ('}',SupportHandler(('}', 'symbol')))
             ]
         return self._check_chain
-
+    
     def toCode(self):
         self.registrateSymbolTable()
         class_code = ''
         for child in self.children:
             class_code += child.toCode(self.getClassName())
+        self.symbol_table['this'] = ('self',self.getClassName(),-1)
         return class_code
 
     def registrateSymbolTable(self):
@@ -407,4 +429,40 @@ class ClassHandler(SequenceHandler):
     
     def getClassName(self):
         return self.children[1].getWord()
-        
+    
+    def getMemberVariableList(self):
+        member_variable = []
+        for name , info_tuple in self.symbol_table:
+            if info_tuple[0] == 'field':
+                member_variable.append([name,info_tuple])
+        return member_variable
+
+    def getStaticVariableList(self):
+        static_variable = []
+        for name , info_tuple in self.symbol_table:
+            if info_tuple[0] == 'static':
+                static_variable.append([name,info_tuple])
+        return static_variable
+
+    def getMemberFunctionList(self):
+        member_function = []
+        multi_subroutine_dec = self.children[4]
+        for subroutine_dec in multi_subroutine_dec.children:
+            if subroutine_dec.children[0].getSubroutineAttr() == 'method':
+                member_function.append(subroutine_dec.getName())
+        return member_function
+
+    def getStaticFunctionList(self):
+        static_function = []
+        multi_subroutine_dec = self.children[4]
+        for subroutine_dec in multi_subroutine_dec.children:
+            if subroutine_dec.children[0].getSubroutineAttr() == 'function':
+                static_function.append(subroutine_dec.getName())
+        return static_function
+
+    def getConstructor(self):
+        multi_subroutine_dec = self.children[4]
+        for subroutine_dec in multi_subroutine_dec.children:
+            if subroutine_dec.children[0].getSubroutineAttr() == 'constructor':
+                return subroutine_dec.getName()
+        return []

@@ -65,7 +65,7 @@ class LetArrayStatementHandler(SequenceHandler):
             ]
         return self._check_chain
     
-    def toCode(self, *args, **kwargs):
+    def toCode(self):
         pass
 class PureIfStatementHandler(SequenceHandler):
     isTerminal = False
@@ -103,6 +103,7 @@ class PureElseStatementHandler(SequenceHandler):
 class IfStatementHandler(SequenceHandler):
     isTerminal = True
     label = 'ifStatement'
+    id = 0
 
     @property
     def check_chain(self):
@@ -128,10 +129,34 @@ class IfStatementHandler(SequenceHandler):
         except Exception as e:
             pass
         return unstructured_xml
+    
+    def toCode(self):
+        result = ''
+        label1 = 'IF_TRUE' + str(self.id)
+        label2 = 'IF_FALSE' + str(self.id)
+        label3 = 'IF_END' + str(self.id)
+        self.id += 1
+        pure_if_statement = self.children[0]
+        expression = pure_if_statement.children[2]
+        result += expression.toCode()
+        result += 'if-goto ' + label1 + '\n'
+        result += 'goto ' + label2 + '\n'
+        result += label1 + '\n'
+        statements = pure_if_statement.children[5]
+        result += statements.toCode()
+        result += 'goto ' + label3 + '\n'
+        result += label2 + '\n'
+        if len(self.children) == 2:
+            pure_else_statement = self.children[1]
+            statements = pure_else_statement.children[2]
+            result += statements.toCode()
+        result += label3 + '\n'
+        return result
 
 class WhileStatementHandler(SequenceHandler):
     isTerminal = True
     label = 'whileStatement'
+    id = 0
 
     @property
     def check_chain(self):
@@ -146,6 +171,22 @@ class WhileStatementHandler(SequenceHandler):
                 ('}',SupportHandler(('}', 'symbol')))
             ]
         return self._check_chain
+    
+    def toCode(self):
+        result = ''
+        label1 = 'WHILE_EXP' + str(self.id)
+        label2 = 'WHILE_END' + str(self.id)
+        self.id += 1
+        result += label1 + '\n'
+        expression = self.children[2]
+        result += expression.toCode()
+        result += 'not\n'
+        result += 'if-goto ' + label2 + '\n'
+        statements = self.children[5]
+        result += statements.toCode()
+        result += 'goto ' + label1 + '\n'
+        result += label2 + '\n'
+        return result
         
 class SubroutineCallHandler(SelectHandler):
     isTerminal = False
@@ -173,6 +214,13 @@ class DoStatementHandler(SequenceHandler):
                 (';',SupportHandler((';', 'symbol')))
             ]
         return self._check_chain
+    
+    def toCode(self):
+        result = ''
+        subroutine_call = self.children[1]
+        result += subroutine_call.toCode()
+        result += 'pop temp 0\n'
+        return result
 
 class VoidReturnStatementHandler(SequenceHandler):
     isTerminal = True
@@ -186,6 +234,12 @@ class VoidReturnStatementHandler(SequenceHandler):
                 (';',SupportHandler((';', 'symbol')))
             ]
         return self._check_chain
+    
+    def toCode(self):
+        result = ''
+        result += 'push constant 0\n'
+        result += 'return\n'
+        return result
 
 class ReturnStatementHandler(SequenceHandler):
     isTerminal = True
@@ -200,6 +254,13 @@ class ReturnStatementHandler(SequenceHandler):
                 (';',SupportHandler((';', 'symbol')))
             ]
         return self._check_chain
+    
+    def toCode(self):
+        result = ''
+        expression = self.children[1]
+        result += expression.toCode()
+        result += 'return\n'
+        return result
 
 class StatementHandler(SelectHandler):    
     isTerminal = False

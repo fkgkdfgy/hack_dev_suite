@@ -44,8 +44,15 @@ class LetStatementHandler(SequenceHandler):
         return self._check_chain
     
     def toCode(self):
-        pass
-
+        try: 
+            result = ''
+            var_tuple = self.searchVariable(self.children[1].getWord())
+            expression = self.children[3]
+            result += expression.toCode()
+            result += 'pop ' + var_tuple[0] + ' ' + str(var_tuple[2]) + '\n'
+            return result
+        except:
+            raise StatementException('LetStatementHandler can not find varName in {0}'.format(self.children[1].getWord()))
 class LetArrayStatementHandler(SequenceHandler):
     isTerminal = True
     label = 'letStatement'
@@ -66,7 +73,23 @@ class LetArrayStatementHandler(SequenceHandler):
         return self._check_chain
     
     def toCode(self):
-        pass
+        try:
+            result = ''
+            var_tuple = self.searchVariable(self.children[1].getWord())
+            expression1 = self.children[3]
+            expression2 = self.children[6]
+            result += expression1.toCode()
+            result += 'push ' + var_tuple[0] + ' ' + str(var_tuple[2]) + '\n'
+            result += 'add\n'
+            result += expression2.toCode()
+            result += 'pop temp 0\n'
+            result += 'pop pointer 1\n'
+            result += 'push temp 0\n'
+            result += 'pop that 0\n'
+            return result
+        except Exception as e:
+            raise StatementException('LetArrayStatementHandler can not find varName in {0}'.format(self.children[1].getWord()))
+
 class PureIfStatementHandler(SequenceHandler):
     isTerminal = False
     label = 'ifStatement'

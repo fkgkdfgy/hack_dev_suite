@@ -167,16 +167,16 @@ class IfStatementHandler(SequenceHandler):
         result += expression.toCode()
         result += 'if-goto ' + label1 + '\n'
         result += 'goto ' + label2 + '\n'
-        result += label1 + '\n'
+        result += 'label '+label1 + '\n'
         statements = pure_if_statement.children[5]
         result += statements.toCode()
         result += 'goto ' + label3 + '\n'
-        result += label2 + '\n'
+        result += 'label '+label2 + '\n'
         if len(self.children) == 2:
             pure_else_statement = self.children[1]
-            statements = pure_else_statement.children[2]
+            statements =  pure_else_statement.children[2]
             result += statements.toCode()
-        result += label3 + '\n'
+        result += 'label '+label3 + '\n'
         return result
 
 class WhileStatementHandler(SequenceHandler):
@@ -203,7 +203,7 @@ class WhileStatementHandler(SequenceHandler):
         label1 = 'WHILE_EXP' + str(self.id)
         label2 = 'WHILE_END' + str(self.id)
         self.id += 1
-        result += label1 + '\n'
+        result += 'label '+ label1 + '\n'
         expression = self.children[2]
         result += expression.toCode()
         result += 'not\n'
@@ -211,7 +211,7 @@ class WhileStatementHandler(SequenceHandler):
         statements = self.children[5]
         result += statements.toCode()
         result += 'goto ' + label1 + '\n'
-        result += label2 + '\n'
+        result += 'label '+label2 + '\n'
         return result
         
 class SubroutineCallHandler(SelectHandler):

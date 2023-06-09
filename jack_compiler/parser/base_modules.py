@@ -11,11 +11,11 @@ class BaseHandler:
     label = ''
 
     def __init__(self, unstructed_xml=None):
+        self.xml = ''
+        self.symbol_table = {}
+        self.parent_handler = None
+        self.children = []
         if unstructed_xml:
-            self.xml = ''
-            self.symbol_table = None
-            self.parent_handler = None
-            self.children = []
             self.processXML(unstructed_xml)
         else:
             self.xml = ''
@@ -52,11 +52,12 @@ class BaseHandler:
         if not left_xml:
             return True
     
-    def toCode(self,*args,**kwargs):
-        pass
+    def toCode(self):
+        return ''
 
     def registrateSymbolTable(self):
-        pass
+        for child in self.children:
+            child.registrateSymbolTable()
 
     def searchVariable(self,symbol):
         if self.symbol_table and symbol in self.symbol_table:
@@ -68,6 +69,8 @@ class BaseHandler:
         return self.parent_handler.searchVariable(symbol)
 
     def addChildren(self,children):
+        for child in children:
+            child.parent_handler = self
         self.children.extend(children)
 
 class SimpleHandler(BaseHandler):
@@ -146,7 +149,7 @@ class MultiUnitHandler(BaseHandler):
         for handler in self.options_handlers:
             if isinstance(handler,EmptyHandler):
                 raise BaseException('options_handlers can not have EmptyHandler')
-        super().__init__(unstructed_xml)
+        BaseHandler.__init__(self,unstructed_xml)
     
     def processXML(self, unstructured_xml):
         self.children = []
@@ -231,7 +234,7 @@ class SequenceHandler(BaseHandler):
             try:
                 unstructured_xml = handler.processXML(unstructured_xml)
             except Exception as e:
-                raise BaseException('Sequence Component {0} processXML error: {0} '.format(item_name, e))
+                raise BaseException('Sequence Component {0} processXML error: {1} '.format(item_name, e))
             self.addChildren([handler])
         return unstructured_xml
 
@@ -261,6 +264,7 @@ class SelectHandler(BaseHandler):
             try: 
                 left_xml = handler.processXML(unstructured_xml)
                 self.selected_candidate = handler
+                self.addChildren([self.selected_candidate])
                 return left_xml
             except Exception as e:
                 continue
@@ -268,6 +272,7 @@ class SelectHandler(BaseHandler):
             try: 
                 left_xml = handler.processXML(unstructured_xml)
                 self.selected_candidate = handler
+                self.addChildren([self.selected_candidate])
                 return left_xml
             except Exception as e:
                 continue
@@ -280,3 +285,6 @@ class SelectHandler(BaseHandler):
             self.xml = self.selected_candidate.toXML()
             return BaseHandler.toXML(self)
         raise BaseException("SelectHandler has not selected a candidate")
+    
+    def toCode(self):
+        return self.selected_candidate.toCode()

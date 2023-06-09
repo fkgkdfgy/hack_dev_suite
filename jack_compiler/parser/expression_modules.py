@@ -30,8 +30,8 @@ class KeywordConstantHandler(SimpleHandler):
     
     def toCode(self):
         if self.getWord() == 'true':
-            result = 'push constant 1\n'
-            result += 'neg\n'
+            result = 'push constant 0\n'
+            result += 'not\n'
         elif self.getWord() == 'false':
             result = 'push constant 0\n'
         elif self.getWord() == 'null':
@@ -133,6 +133,9 @@ class ExpressionListHandler(MultiUnitHandler):
         for expression_handler in expression_handlers:
             result += expression_handler.toCode()
         return result
+    
+    def getExpressionSize(self):
+        return len([child for child in self.children if child.label == 'expression'])
 
 class ExpressionHandler(MultiUnitHandler):
     isTerminal = True
@@ -192,7 +195,7 @@ class PureFunctionCallHandler(SequenceHandler):
         # 再压入参数
         result += self.children[2].toCode()
         # 调用函数
-        result += 'call {0}.{1} {2}\n'.format(class_name, self.children[0].getWord(), len(self.children[2].children)+1)
+        result += 'call {0}.{1} {2}\n'.format(class_name, self.children[0].getWord(), self.children[2].getExpressionSize()+1)
         return result
 
 class ClassFunctionCallHandler(SequenceHandler):
@@ -226,13 +229,13 @@ class ClassFunctionCallHandler(SequenceHandler):
             # 压入参数
             result += self.children[4].toCode()
             # 调用函数
-            result += 'call {0}.{1} {2}\n'.format(description_of_variable[1], self.children[2].getWord(), len(self.children[4].children)+1)
+            result += 'call {0}.{1} {2}\n'.format(description_of_variable[1], self.children[2].getWord(), self.children[4].getExpressionSize()+1)
         except:
             print('Variable {0} not defined, treat as a class'.format(var_name))
             # 压入参数
             result += self.children[4].toCode()
             # 调用函数
-            result += 'call {0}.{1} {2}\n'.format(var_name, self.children[2].getWord(), len(self.children[4].children))
+            result += 'call {0}.{1} {2}\n'.format(var_name, self.children[2].getWord(), self.children[4].getExpressionSize())
         return result
 
 class TermExpressionHandler(SequenceHandler):

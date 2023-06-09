@@ -24,9 +24,11 @@ class MultiStatementHandler(MultiUnitHandler):
     def toCode(self):
         result = ''
         for child in self.children:
-            result += child.toCode()
+            statement_code = child.toCode()
+            print(statement_code)
+            result += statement_code
         return result
-
+    
 class LetStatementHandler(SequenceHandler):
     isTerminal = True
     label = 'letStatement'
@@ -53,6 +55,7 @@ class LetStatementHandler(SequenceHandler):
             return result
         except:
             raise StatementException('LetStatementHandler can not find varName in {0}'.format(self.children[1].getWord()))
+
 class LetArrayStatementHandler(SequenceHandler):
     isTerminal = True
     label = 'letStatement'

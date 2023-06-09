@@ -51,15 +51,30 @@ def assert_answer(answer, result):
 def test_class():
     codes = '''
     class Main {
-        function void main() {
-            var Array a;
-            var int length;
-            let length = Keyboard.readInt("HOW MANY NUMBERS? ");
-            let a = Array.new(length);
-            do Array.dispose(a);
-            return;}'''
+    field int a,b,c,d;
+    static Point x,y;
+    function void main() {
+        var SquareGame game;
+        do Math.sqrt(100);
+        do OS.println(a);
+        if(x=y){
+           do OS.println(a);
+        }
+        else
+        {
+           do OS.printIn(b);
+        }
+        let game = SquareGame.new();
+        do game.run();
+        do game.dispose();
+        return;
+    }
+    }
+        '''
     _,unstructured_xml = segmentCodes(codes)
-    class_handler = ClassHandler(unstructured_xml,'''''')
+    class_handler = ClassHandler()
+    class_handler.processXML(unstructured_xml)
+    print(class_handler.toCode())
 
 if __name__ == '__main__':
     for instance in test_instance:

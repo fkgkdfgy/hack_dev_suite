@@ -61,11 +61,12 @@ class VarDecHandler(SequenceHandler):
         return self._check_chain
     
     def registrateSymbolTable(self):
+        self.symbol_table = {}
         var_dec_type = self.children[1].getWord()
         index = 0
         for var_name in self.children[2].children:
             var_name = var_name.getWord()                
-            self.symbol_table[var_name] = ('local',var_dec_type,index)
+            self.symbol_table[var_name] = ['local',var_dec_type,index]
             index += 1
 
 class StaticOrFieldHandler(SelectHandler):
@@ -100,13 +101,15 @@ class ClassVarDecHandler(SequenceHandler):
         return self._check_chain
 
     def registrateSymbolTable(self):
+        self.symbol_table = {}
         var_dec_attr = self.children[0].getAttr()
         var_dec_type = self.children[1].getWord()
         index = 0
-        for var_name in self.children[2].children:
-            var_name = var_name.getWord()                
-            self.symbol_table[var_name] = (var_dec_attr,var_dec_type,index)
-            index += 1
+        for child in self.children[2].children:
+            if isinstance(child,VarNameHandler):
+                var_name = child.getWord()                
+                self.symbol_table[var_name] = [var_dec_attr,var_dec_type,index]
+                index += 1
 
 class ParameterListHandler(MultiStatementHandler):
     isTerminal = True
@@ -125,27 +128,17 @@ class ParameterListHandler(MultiStatementHandler):
         return self._options_handlers
     
     def registrateSymbolTable(self):
-        for child in self.children:
-            child.registrateSymbolTable()
-        
-        child_symbol_table = {}
-        for child in self.chuildren:
-            child_symbol_table[child] = child.symbol_table
-        
-        # symbol_table ::= 'varname':(attr,type,index) 三个属性
-        # 这里需要把相同attr 的 variable 对应的index 进行累加来形成新的symbol table
-        for child in self.children:
-            for var_name in child.symbol_table:
-                if var_name in self.symbol_table:
-                    raise ClassException('var_name: {} has been defined'.format(var_name))
-                self.symbol_table[var_name] = child.symbol_table[var_name]
-        
-        # 更新 argument 的index
-        argument_index = 0
-        for var_name in self.symbol_table:
-            if self.symbol_table[var_name][0] == 'argument':
-                self.symbol_table[var_name][2] = argument_index
-                argument_index += 1
+        var_types = [child for child in self.children if isinstance(child,TypeHandler)]
+        var_names = [child for child in self.children if isinstance(child,VarNameHandler)]
+        if len(var_types) != len(var_names):
+            raise ClassException('var_types: {0} and var_names: {1} are not equal'.format(var_types,var_names))
+        self.symbol_table = {}
+        index = 0
+        for index in range(len(var_types)):
+            var_type = var_types[index].getWord()
+            var_name = var_names[index].getWord()
+            self.symbol_table[var_name] = ['argument',var_type,index] 
+            index += 1
 
     def getParameterNum(self):
         count = 0
@@ -205,7 +198,7 @@ class SubroutineDecHandler(SequenceHandler):
         return_code += 'push constant {}\n'.format(object_member_variable_size)
         return_code += 'call Memory.alloc 1\n'
         return_code += 'pop pointer 0\n'
-        return_code += self.children[7].toCode()
+        return_code += self.children[6].toCode()
         return return_code
 
     def toFunction(self,class_name):
@@ -213,7 +206,7 @@ class SubroutineDecHandler(SequenceHandler):
         subroutine_name = self.children[2].getWord()
         local_var_num = self.children[6].getLocalVarNum()
         return_code += 'function {}.{} {}\n'.format(class_name,subroutine_name,local_var_num)
-        return_code += self.children[7].toCode()
+        return_code += self.children[6].toCode()
         return return_code
 
     def toMethod(self,class_name):
@@ -223,16 +216,17 @@ class SubroutineDecHandler(SequenceHandler):
         return_code += 'function {}.{} {}\n'.format(class_name,subroutine_name,local_var_num)
         return_code += 'push argument 0\n'
         return_code += 'pop pointer 0\n'
-        return_code += self.children[7].toCode()
+        return_code += self.children[6].toCode()
         return return_code
 
     def registrateSymbolTable(self):
+        self.symbol_table = {}
+        BaseHandler.registrateSymbolTable(self)        
         parameter_list = self.children[4]
-        parameter_list.registrateSymbolTable()
         self.symbol_table = parameter_list.symbol_table
         # 将type 更改为 argument
         for var_name in self.symbol_table:
-            self.symbol_table[var_name] = ('argument',self.symbol_table[var_name][1],self.symbol_table[var_name][2])
+            self.symbol_table[var_name] = ['argument',self.symbol_table[var_name][1],self.symbol_table[var_name][2]]
 
     def toCode(self):
         self.registrateSymbolTable()
@@ -241,7 +235,7 @@ class SubroutineDecHandler(SequenceHandler):
             raise ClassException('parent_class is not defined')
         class_name = parent_class.getClassName()
         result_code = ''
-        subroutine_type = self.children[0].getSubroutineAttr()
+        subroutine_type = self.getAttr()
         if subroutine_type == 'constructor':
             member_variable_size = len(parent_class.getMemberVariableList())
             result_code = self.toConstructor(class_name,member_variable_size)
@@ -263,7 +257,7 @@ class SubroutineDecHandler(SequenceHandler):
 
     def getAttr(self):
         attr_handler = self.children[0]
-        return self.attr_handler.selected_candidate.getWord()
+        return attr_handler.selected_candidate.getWord()
     
     def getName(self):
         return self.children[2].getWord()
@@ -285,6 +279,8 @@ class MultiVarDecHandler(MultiUnitHandler):
         return self._options_handlers
     
     def registrateSymbolTable(self):
+        self.symbol_table = {}
+        
         for child in self.children:
             child.registrateSymbolTable()
         
@@ -294,7 +290,7 @@ class MultiVarDecHandler(MultiUnitHandler):
             for var_name in child.symbol_table:
                 if var_name in self.symbol_table:
                     raise ClassException('var_name: {} has been defined'.format(var_name))
-                self.symbol_table[var_name] = child.symbol_table[var_name]
+                self.symbol_table[var_name] = copy.deepcopy(child.symbol_table[var_name])
         # 更新local 的index
         local_index = 0
         for var_name in self.symbol_table:
@@ -320,16 +316,16 @@ class SubroutineBodyHandler(SequenceHandler):
         return len(self.symbol_table)    
 
     def registrateSymbolTable(self):
+        self.symbol_table = {}
         multi_var_dec = self.children[1]
         multi_var_dec.registrateSymbolTable()
-        self.symbol_table = multi_var_dec.symbol_table
+        self.symbol_table = copy.deepcopy(multi_var_dec.symbol_table)
 
     def toCode(self):
         self.registrateSymbolTable()
-        return_code = ''
-        for child in self.children[2].children:
-            return_code += child.toCode()
-        return return_code
+        result_code = ''
+        result_code =  self.children[2].toCode()
+        return result_code
 
 class MultiClassVarDecHandler(MultiUnitHandler):
     isTerminal = False
@@ -348,6 +344,7 @@ class MultiClassVarDecHandler(MultiUnitHandler):
         return self._options_handlers
     
     def registrateSymbolTable(self):
+        self.symbol_table={}
         for child in self.children:
             child.registrateSymbolTable()
         
@@ -357,7 +354,7 @@ class MultiClassVarDecHandler(MultiUnitHandler):
             for var_name in child.symbol_table:
                 if var_name in self.symbol_table:
                     raise ClassException('var_name: {} has been defined'.format(var_name))
-                self.symbol_table[var_name] = child.symbol_table[var_name]
+                self.symbol_table[var_name] = copy.deepcopy(child.symbol_table[var_name])
         # 更新static 的index
         static_index = 0
         for var_name in self.symbol_table:
@@ -418,28 +415,34 @@ class ClassHandler(SequenceHandler):
         self.registrateSymbolTable()
         class_code = ''
         for child in self.children:
-            class_code += child.toCode(self.getClassName())
-        self.symbol_table['this'] = ('self',self.getClassName(),-1)
+            tmp_code = child.toCode()
+            print(tmp_code)
+            class_code += tmp_code
         return class_code
 
     def registrateSymbolTable(self):
+        self.symbol_table = {}
         class_var_dec = self.children[3]
         class_var_dec.registrateSymbolTable()
-        self.symbol_table = class_var_dec.symbol_table
+        self.symbol_table = copy.deepcopy(class_var_dec.symbol_table)
+        for name , info_tuple in self.symbol_table.items():
+            if info_tuple[0] == 'field':
+                self.symbol_table[name][0] = 'this'
+        self.symbol_table['this'] = ['self',self.getClassName(),-1]
     
     def getClassName(self):
         return self.children[1].getWord()
     
     def getMemberVariableList(self):
         member_variable = []
-        for name , info_tuple in self.symbol_table:
-            if info_tuple[0] == 'field':
+        for name , info_tuple in self.symbol_table.items():
+            if info_tuple[0] == 'this':
                 member_variable.append([name,info_tuple])
         return member_variable
 
     def getStaticVariableList(self):
         static_variable = []
-        for name , info_tuple in self.symbol_table:
+        for name , info_tuple in self.symbol_table.items():
             if info_tuple[0] == 'static':
                 static_variable.append([name,info_tuple])
         return static_variable

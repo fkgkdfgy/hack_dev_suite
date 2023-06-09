@@ -17,6 +17,7 @@ if __name__ == '__main__':
     
     abs_file_path = args.file
     structured_xml_path = args.file + ".xml"
+    vm_code_path = args.file + ".vm"
     
     text_io = TextIO(abs_file_path,structured_xml_path)
     tokenizer = Tokenizer()
@@ -39,3 +40,11 @@ if __name__ == '__main__':
 
     text_io.write_line(structured_xml)
     text_io.close_write()
+
+    vm_code = grammar.toCode()
+
+    text_io = TextIO(None,vm_code_path)
+    text_io.write_line(vm_code)
+    text_io.close_write()
+
+    

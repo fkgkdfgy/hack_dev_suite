@@ -12,7 +12,7 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--file","C:\\Users\\lwl\\Desktop\\nand2tetris\\nand2tetris\\projects\\09\\Square\\Square.jack"
+                "--file","C:\\Users\\lwl\\Desktop\\nand2tetris\\nand2tetris\\projects\\09\\Square\\SquareGame.jack"
             ]
         }
     ]

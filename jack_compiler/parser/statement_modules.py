@@ -158,10 +158,10 @@ class IfStatementHandler(SequenceHandler):
     
     def toCode(self):
         result = ''
-        label1 = 'IF_TRUE' + str(self.id)
-        label2 = 'IF_FALSE' + str(self.id)
-        label3 = 'IF_END' + str(self.id)
-        self.id += 1
+        label1 = 'IF_TRUE' + str(IfStatementHandler.id)
+        label2 = 'IF_FALSE' + str(IfStatementHandler.id)
+        label3 = 'IF_END' + str(IfStatementHandler.id)
+        IfStatementHandler.id += 1
         pure_if_statement = self.children[0]
         expression = pure_if_statement.children[2]
         result += expression.toCode()
@@ -200,9 +200,9 @@ class WhileStatementHandler(SequenceHandler):
     
     def toCode(self):
         result = ''
-        label1 = 'WHILE_EXP' + str(self.id)
-        label2 = 'WHILE_END' + str(self.id)
-        self.id += 1
+        label1 = 'WHILE_EXP' + str(WhileStatementHandler.id)
+        label2 = 'WHILE_END' + str(WhileStatementHandler.id)
+        WhileStatementHandler.id += 1
         result += 'label '+ label1 + '\n'
         expression = self.children[2]
         result += expression.toCode()

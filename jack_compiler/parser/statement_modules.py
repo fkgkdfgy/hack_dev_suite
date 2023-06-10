@@ -4,30 +4,31 @@ from expression_modules import *
 class StatementException(Exception):
     pass
 
-class MultiStatementHandler(SequenceHandler):
+class MultiStatementHandler(MultiUnitHandler):
     isTerminal = True
     label = 'statements'
 
-    def processXML(self, unstructured_xml):
-        self.xml = ''
-        statement_length = StatementHandler().findTarget(unstructured_xml)
-        while statement_length > 0:
-            self.xml += StatementHandler().processXML(unstructured_xml[:statement_length])
-            unstructured_xml = unstructured_xml[statement_length:]
-            statement_length = StatementHandler().findTarget(unstructured_xml)
-        
-        if not unstructured_xml:
-            return self.toXML()
-        raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
+    empty_allowed = True
 
-    def findTarget(self, unstructured_xml):
-        origin_length = len(unstructured_xml)
-        statement_length = StatementHandler().findTarget(unstructured_xml)
-        while statement_length > 0:
-            unstructured_xml = unstructured_xml[statement_length:]
-            statement_length = StatementHandler().findTarget(unstructured_xml)
-        return origin_length - len(unstructured_xml)
+    @property
+    def base_handler(self):
+        if not hasattr(self, '_base_handler'):
+            self._base_handler = StatementHandler()
+        return self._base_handler
+    @property
+    def options_handlers(self):
+        if not hasattr(self, '_options_handlers'):
+            self._options_handlers = [StatementHandler()]
+        return self._options_handlers
 
+    def toCode(self):
+        result = ''
+        for child in self.children:
+            statement_code = child.toCode()
+            print(statement_code)
+            result += statement_code
+        return result
+    
 class LetStatementHandler(SequenceHandler):
     isTerminal = True
     label = 'letStatement'
@@ -43,56 +44,18 @@ class LetStatementHandler(SequenceHandler):
                 (';',SupportHandler((';', 'symbol')))
             ]
         return self._check_chain
-
-    @property
-    def valid_num(self):
-        if not hasattr(self, '_valid_num'):
-            self._valid_num = [5]
-        return self._valid_num
-
-    def findTarget(self, unstructured_xml):
-        try:
-            try:
-                last_semicolon_index = unstructured_xml.index((';', 'symbol'))
-            except ValueError:
-                return -1
-            self.processXML(unstructured_xml[:last_semicolon_index+1])
-        except StatementException:
-            return -1
-        return last_semicolon_index+1
     
-    def processXML(self, unstructured_xml):
-        self.xml = ''
-        if SupportHandler(('let', 'keyword')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('keyword')('let')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if VarNameHandler().isTarget(unstructured_xml[0:1]):
-            self.xml += VarNameHandler().processXML(unstructured_xml[0:1])
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if SupportHandler(('=', 'symbol')).isTarget(unstructured_xml[0:1]):
-            self.xml += common_convert('symbol')('=')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if ExpressionHandler().isTarget(unstructured_xml[0:-1]):
-            self.xml += ExpressionHandler().processXML(unstructured_xml[0:-1])
-            unstructured_xml = unstructured_xml[-1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if SupportHandler((';', 'symbol')).isTarget(unstructured_xml[0:1]):
-            self.xml += common_convert('symbol')(';')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
+    def toCode(self):
+        try: 
+            result = ''
+            var_tuple = self.searchVariable(self.children[1].getWord())
+            expression = self.children[3]
+            result += expression.toCode()
+            result += 'pop ' + var_tuple[0] + ' ' + str(var_tuple[2]) + '\n'
+            return result
+        except:
+            raise StatementException('LetStatementHandler can not find varName in {0}'.format(self.children[1].getWord()))
 
-        if not unstructured_xml:
-            return self.toXML()
-        raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-    
 class LetArrayStatementHandler(SequenceHandler):
     isTerminal = True
     label = 'letStatement'
@@ -111,76 +74,27 @@ class LetArrayStatementHandler(SequenceHandler):
                 (';',SupportHandler((';', 'symbol')))
             ]
         return self._check_chain
-
-    @property
-    def valid_num(self):
-        if not hasattr(self, '_valid_num'):
-            self._valid_num = [8]
-        return self._valid_num
-
-    def findTarget(self, unstructured_xml):
-        try:
-            try:
-                last_semicolon_index = unstructured_xml.index((';', 'symbol'))
-            except ValueError:
-                return -1
-            self.processXML(unstructured_xml[:last_semicolon_index+1])
-        except StatementException:
-            return -1
-        return last_semicolon_index+1
     
-    def processXML(self, unstructured_xml):
-        self.xml = ''
-        if SupportHandler(('let', 'keyword')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('keyword')('let')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if VarNameHandler().isTarget(unstructured_xml[0:1]):
-            self.xml += VarNameHandler().processXML(unstructured_xml[0:1])
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if SupportHandler(('[', 'symbol')).isTarget(unstructured_xml[0:1]):
-            self.xml += common_convert('symbol')('[')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        # find ] symbol index
+    def toCode(self):
         try:
-            last_right_bracket_index = unstructured_xml.index((']', 'symbol'))
-        except ValueError:
-            raise StatementException('the end token ] of let statement is missing')
-        if ExpressionHandler().isTarget(unstructured_xml[:last_right_bracket_index]):
-            self.xml += ExpressionHandler().processXML(unstructured_xml[:last_right_bracket_index])
-            unstructured_xml = unstructured_xml[last_right_bracket_index:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if SupportHandler((']', 'symbol')).isTarget(unstructured_xml[0:1]):
-            self.xml += common_convert('symbol')(']')
-            unstructured_xml = unstructured_xml[1:]
-        if SupportHandler(('=', 'symbol')).isTarget(unstructured_xml[0:1]):
-            self.xml += common_convert('symbol')('=')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if ExpressionHandler().isTarget(unstructured_xml[0:-1]):
-            self.xml += ExpressionHandler().processXML(unstructured_xml[0:-1])
-            unstructured_xml = unstructured_xml[-1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml)) 
-        if SupportHandler((';', 'symbol')).isTarget(unstructured_xml[0:1]):
-            self.xml += common_convert('symbol')(';')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
+            result = ''
+            var_tuple = self.searchVariable(self.children[1].getWord())
+            expression1 = self.children[3]
+            expression2 = self.children[6]
+            result += expression1.toCode()
+            result += 'push ' + var_tuple[0] + ' ' + str(var_tuple[2]) + '\n'
+            result += 'add\n'
+            result += expression2.toCode()
+            result += 'pop temp 0\n'
+            result += 'pop pointer 1\n'
+            result += 'push temp 0\n'
+            result += 'pop that 0\n'
+            return result
+        except Exception as e:
+            raise StatementException('LetArrayStatementHandler can not find varName in {0}'.format(self.children[1].getWord()))
 
-        if not unstructured_xml:
-            return self.toXML()
-        raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-
-class IfStatementHandler(SequenceHandler):
-    isTerminal = True
+class PureIfStatementHandler(SequenceHandler):
+    isTerminal = False
     label = 'ifStatement'
 
     @property
@@ -193,130 +107,82 @@ class IfStatementHandler(SequenceHandler):
                 (')',SupportHandler((')', 'symbol'))),
                 ('{',SupportHandler(('{', 'symbol'))),
                 ('statements',MultiStatementHandler()),
-                ('}',SupportHandler(('}', 'symbol'))),
+                ('}',SupportHandler(('}', 'symbol')))
+            ]
+        return self._check_chain
+
+class PureElseStatementHandler(SequenceHandler):
+    isTerminal = False
+    label = 'elseStatement'
+
+    @property
+    def check_chain(self):
+        if not hasattr(self, '_check_chain'):
+            self._check_chain = [
                 ('else',SupportHandler(('else', 'keyword'))),
                 ('{',SupportHandler(('{', 'symbol'))),
                 ('statements',MultiStatementHandler()),
                 ('}',SupportHandler(('}', 'symbol')))
             ]
         return self._check_chain
+    
+class IfStatementHandler(SequenceHandler):
+    isTerminal = True
+    label = 'ifStatement'
+    id = 0
 
     @property
-    def valid_num(self):
-        if not hasattr(self, '_valid_num'):
-            self._valid_num = [7,11]
-        return self._valid_num
-    
-    def processXML(self, unstructured_xml):
-        self.xml = ''
-        if SupportHandler(('if', 'keyword')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('keyword')('if')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if SupportHandler(('(', 'symbol')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('symbol')('(')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        try:
-            left_brace_index = unstructured_xml.index(('{', 'symbol'))
-        except ValueError:
-            raise StatementException('the start { is missing')
-        if ExpressionHandler().isTarget(unstructured_xml[0:left_brace_index-1]):
-            self.xml += ExpressionHandler().processXML(unstructured_xml[0:left_brace_index-1])
-            unstructured_xml = unstructured_xml[left_brace_index-1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if SupportHandler((')', 'symbol')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('symbol')(')')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if SupportHandler(('{', 'symbol')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('symbol')('{')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        statements_length = MultiStatementHandler().findTarget(unstructured_xml)
-        if statements_length >= 0:
-            self.xml += MultiStatementHandler().processXML(unstructured_xml[:statements_length])
-            unstructured_xml = unstructured_xml[statements_length:]
-        if SupportHandler(('}', 'symbol')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('symbol')('}')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if not unstructured_xml:
-            return self.toXML()
-        if SupportHandler(('else', 'keyword')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('keyword')('else')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if SupportHandler(('{', 'symbol')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('symbol')('{')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        statements_length = MultiStatementHandler().findTarget(unstructured_xml)
-        if statements_length >= 0:
-            self.xml += MultiStatementHandler().processXML(unstructured_xml[:statements_length])
-            unstructured_xml = unstructured_xml[statements_length:]
-        if SupportHandler(('}', 'symbol')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('symbol')('}')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
+    def check_chain(self):
+        if not hasattr(self, '_check_chain'):
+            self._check_chain = [
+                ('pureIfStatement',PureIfStatementHandler()),
+                ('pureElseStatement',PureElseStatementHandler())
+            ]
+        return self._check_chain
 
-        if not unstructured_xml:
-            return self.toXML()
-        raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))            
-        
-    def findTarget(self, unstructured_xml):
-        origin_length = len(unstructured_xml)
-        if not SupportHandler(('if', 'keyword')).isTarget(unstructured_xml[:1]):
-            return -1
-        unstructured_xml = unstructured_xml[1:]
-        if not SupportHandler(('(', 'symbol')).isTarget(unstructured_xml[:1]):
-            return -1
-        unstructured_xml = unstructured_xml[1:]
+    def processXML(self, unstructured_xml):
+        self.children = []
+        pure_if_statement_handler = copy.deepcopy(self.check_chain[0][1])
         try:
-            left_brace_index = unstructured_xml.index(('{', 'symbol'))
-        except ValueError:
-            return -1
-        if not ExpressionHandler().isTarget(unstructured_xml[:left_brace_index-1]):
-            return -1
-        unstructured_xml = unstructured_xml[left_brace_index-1:]
-        if not SupportHandler((')', 'symbol')).isTarget(unstructured_xml[:1]):
-            return -1
-        unstructured_xml = unstructured_xml[1:]
-        if not SupportHandler(('{', 'symbol')).isTarget(unstructured_xml[:1]):
-            return -1
-        unstructured_xml = unstructured_xml[1:]
-        statements_length = MultiStatementHandler().findTarget(unstructured_xml)
-        if statements_length >= 0:
-            unstructured_xml = unstructured_xml[statements_length:]
-        if not SupportHandler(('}', 'symbol')).isTarget(unstructured_xml[:1]):
-            return -1
-        unstructured_xml = unstructured_xml[1:]
-        if not SupportHandler(('else', 'keyword')).isTarget(unstructured_xml[:1]):
-            return origin_length - len(unstructured_xml)
-        unstructured_xml = unstructured_xml[1:]
-        if not SupportHandler(('{', 'symbol')).isTarget(unstructured_xml[:1]):
-            return -1
-        unstructured_xml = unstructured_xml[1:]
-        statements_length = MultiStatementHandler().findTarget(unstructured_xml)
-        if statements_length >= 0:
-            unstructured_xml = unstructured_xml[statements_length:]
-        if not SupportHandler(('}', 'symbol')).isTarget(unstructured_xml[:1]):
-            return -1
-        unstructured_xml = unstructured_xml[1:]
-        return origin_length - len(unstructured_xml)
+            unstructured_xml = pure_if_statement_handler.processXML(unstructured_xml)
+            self.addChildren([pure_if_statement_handler])
+        except Exception as e:
+            raise StatementException('IfStatementHandler can not find pureIfStatement in {0}'.format(unstructured_xml))
+        pure_else_statement_handler = copy.deepcopy(self.check_chain[1][1])
+        try:
+            unstructured_xml = pure_else_statement_handler.processXML(unstructured_xml)
+            self.addChildren([pure_else_statement_handler])
+        except Exception as e:
+            pass
+        return unstructured_xml
+    
+    def toCode(self):
+        result = ''
+        label1 = 'IF_TRUE' + str(IfStatementHandler.id)
+        label2 = 'IF_FALSE' + str(IfStatementHandler.id)
+        label3 = 'IF_END' + str(IfStatementHandler.id)
+        IfStatementHandler.id += 1
+        pure_if_statement = self.children[0]
+        expression = pure_if_statement.children[2]
+        result += expression.toCode()
+        result += 'if-goto ' + label1 + '\n'
+        result += 'goto ' + label2 + '\n'
+        result += 'label '+label1 + '\n'
+        statements = pure_if_statement.children[5]
+        result += statements.toCode()
+        result += 'goto ' + label3 + '\n'
+        result += 'label '+label2 + '\n'
+        if len(self.children) == 2:
+            pure_else_statement = self.children[1]
+            statements =  pure_else_statement.children[2]
+            result += statements.toCode()
+        result += 'label '+label3 + '\n'
+        return result
 
 class WhileStatementHandler(SequenceHandler):
     isTerminal = True
     label = 'whileStatement'
+    id = 0
 
     @property
     def check_chain(self):
@@ -331,86 +197,22 @@ class WhileStatementHandler(SequenceHandler):
                 ('}',SupportHandler(('}', 'symbol')))
             ]
         return self._check_chain
-
-    @property
-    def valid_num(self):
-        if not hasattr(self, '_valid_num'):
-            self._valid_num = [7]
-        return self._valid_num
-
-    def processXML(self, unstructured_xml):
-        self.xml = ''
-        if SupportHandler(('while', 'keyword')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('keyword')('while')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if SupportHandler(('(', 'symbol')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('symbol')('(')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        try:
-            left_brace_index = unstructured_xml.index(('{', 'symbol'))
-        except ValueError:
-            raise StatementException('the start { is missing')
-        if ExpressionHandler().isTarget(unstructured_xml[0:left_brace_index-1]):
-            self.xml += ExpressionHandler().processXML(unstructured_xml[0:left_brace_index-1])
-            unstructured_xml = unstructured_xml[left_brace_index-1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if SupportHandler((')', 'symbol')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('symbol')(')')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if SupportHandler(('{', 'symbol')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('symbol')('{')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        statements_length = MultiStatementHandler().findTarget(unstructured_xml)
-        if statements_length >= 0:
-            self.xml += MultiStatementHandler().processXML(unstructured_xml[:statements_length])
-            unstructured_xml = unstructured_xml[statements_length:]
-        if SupportHandler(('}', 'symbol')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('symbol')('}')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-
-        if not unstructured_xml:
-            return self.toXML()
-        raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-
-    def findTarget(self, unstructured_xml):
-        origin_length = len(unstructured_xml)
-        if not SupportHandler(('while', 'keyword')).isTarget(unstructured_xml[:1]):
-            return -1
-        unstructured_xml = unstructured_xml[1:]
-        if not SupportHandler(('(', 'symbol')).isTarget(unstructured_xml[:1]):
-            return -1
-        unstructured_xml = unstructured_xml[1:]
-        try:
-            left_brace_index = unstructured_xml.index(('{', 'symbol'))
-        except ValueError:
-            return -1
-        if not ExpressionHandler().isTarget(unstructured_xml[:left_brace_index-1]):
-            return -1
-        unstructured_xml = unstructured_xml[left_brace_index-1:]
-        if not SupportHandler((')', 'symbol')).isTarget(unstructured_xml[:1]):
-            return -1
-        unstructured_xml = unstructured_xml[1:]
-        if not SupportHandler(('{', 'symbol')).isTarget(unstructured_xml[:1]):
-            return -1
-        unstructured_xml = unstructured_xml[1:]
-        statements_length = MultiStatementHandler().findTarget(unstructured_xml)
-        if statements_length >= 0:
-            unstructured_xml = unstructured_xml[statements_length:]
-        if not SupportHandler(('}', 'symbol')).isTarget(unstructured_xml[:1]):
-            return -1
-        unstructured_xml = unstructured_xml[1:]
-        return origin_length - len(unstructured_xml)
+    
+    def toCode(self):
+        result = ''
+        label1 = 'WHILE_EXP' + str(WhileStatementHandler.id)
+        label2 = 'WHILE_END' + str(WhileStatementHandler.id)
+        WhileStatementHandler.id += 1
+        result += 'label '+ label1 + '\n'
+        expression = self.children[2]
+        result += expression.toCode()
+        result += 'not\n'
+        result += 'if-goto ' + label2 + '\n'
+        statements = self.children[5]
+        result += statements.toCode()
+        result += 'goto ' + label1 + '\n'
+        result += 'label '+label2 + '\n'
+        return result
         
 class SubroutineCallHandler(SelectHandler):
     isTerminal = False
@@ -439,44 +241,32 @@ class DoStatementHandler(SequenceHandler):
             ]
         return self._check_chain
     
+    def toCode(self):
+        result = ''
+        subroutine_call = self.children[1]
+        result += subroutine_call.toCode()
+        result += 'pop temp 0\n'
+        return result
+
+class VoidReturnStatementHandler(SequenceHandler):
+    isTerminal = True
+    label = 'returnStatement'
+
     @property
-    def valid_num(self):
-        if not hasattr(self, '_valid_num'):
-            self._valid_num = [3]
-        return self._valid_num
-
-    def findTarget(self, unstructured_xml):
-        try:
-            try:
-                last_semicolon_index = unstructured_xml.index((';', 'symbol'))
-            except ValueError:
-                return -1
-            self.processXML(unstructured_xml[:last_semicolon_index+1])
-        except StatementException:
-            return -1
-        return last_semicolon_index+1
+    def check_chain(self):
+        if not hasattr(self, '_check_chain'):
+            self._check_chain = [
+                ('return',SupportHandler(('return', 'keyword'))),
+                (';',SupportHandler((';', 'symbol')))
+            ]
+        return self._check_chain
     
-    def processXML(self, unstructured_xml):
-        self.xml = ''
-        if SupportHandler(('do', 'keyword')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('keyword')('do')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if SubroutineCallHandler().isTarget(unstructured_xml[0:-1]):
-            self.xml += SubroutineCallHandler().processXML(unstructured_xml[0:-1])
-            unstructured_xml = unstructured_xml[-1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if SupportHandler((';', 'symbol')).isTarget(unstructured_xml[0:1]):
-            self.xml += common_convert('symbol')(';')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
+    def toCode(self):
+        result = ''
+        result += 'push constant 0\n'
+        result += 'return\n'
+        return result
 
-        if not unstructured_xml:
-            return self.toXML()
-        raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
 class ReturnStatementHandler(SequenceHandler):
     isTerminal = True
     label = 'returnStatement'
@@ -491,43 +281,12 @@ class ReturnStatementHandler(SequenceHandler):
             ]
         return self._check_chain
     
-    @property
-    def valid_num(self):
-        if not hasattr(self, '_valid_num'):
-            self._valid_num = [3]
-        return self._valid_num
-
-    def processXML(self, unstructured_xml):
-        self.xml = ''
-        if SupportHandler(('return', 'keyword')).isTarget(unstructured_xml[:1]):
-            self.xml += common_convert('keyword')('return')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-        if ExpressionHandler().isTarget(unstructured_xml[0:-1]):
-            self.xml += ExpressionHandler().processXML(unstructured_xml[0:-1])
-            unstructured_xml = unstructured_xml[-1:]
-        
-        if SupportHandler((';', 'symbol')).isTarget(unstructured_xml[0:1]):
-            self.xml += common_convert('symbol')(';')
-            unstructured_xml = unstructured_xml[1:]
-        else:
-            raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-
-        if not unstructured_xml:
-            return self.toXML()
-        raise StatementException('Cannot parse the following tokens: {0}'.format(unstructured_xml))
-
-    def findTarget(self, unstructured_xml):
-        try:
-            try:
-                last_semicolon_index = unstructured_xml.index((';', 'symbol'))
-            except ValueError:
-                return -1
-            self.processXML(unstructured_xml[:last_semicolon_index+1])
-        except StatementException:
-            return -1
-        return last_semicolon_index+1
+    def toCode(self):
+        result = ''
+        expression = self.children[1]
+        result += expression.toCode()
+        result += 'return\n'
+        return result
 
 class StatementHandler(SelectHandler):    
     isTerminal = False
@@ -543,12 +302,7 @@ class StatementHandler(SelectHandler):
                 'whileStatement': WhileStatementHandler(),
                 'doStatement': DoStatementHandler(),
                 'returnStatement': ReturnStatementHandler(),
+                'voidReturnStatement': VoidReturnStatementHandler()
             }
         return self._candidates
     
-    def findTarget(self, unstructured_xml):
-        for candidate in self.candidates.values():
-            find_length = candidate.findTarget(unstructured_xml)
-            if find_length >0:
-                return find_length
-        return -1

@@ -17,6 +17,7 @@ if __name__ == '__main__':
     
     abs_file_path = args.file
     structured_xml_path = args.file + ".xml"
+    vm_code_path = args.file + ".vm"
     
     text_io = TextIO(abs_file_path,structured_xml_path)
     tokenizer = Tokenizer()
@@ -35,7 +36,13 @@ if __name__ == '__main__':
         if word[0] == 'class':
             total_unstructured_xml = total_unstructured_xml[index:]
 
-    structured_xml = grammar.processXML(total_unstructured_xml)
+    xml,code = grammar.processXML(total_unstructured_xml)
 
-    text_io.write_line(structured_xml)
+    text_io.write_line(xml)
     text_io.close_write()
+
+    text_io = TextIO(None,vm_code_path)
+    text_io.write_line(code)
+    text_io.close_write()
+
+    

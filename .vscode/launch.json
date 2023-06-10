@@ -10,7 +10,10 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "args": [
+                "--file","C:\\Users\\lwl\\Desktop\\nand2tetris\\nand2tetris\\projects\\09\\Square\\SquareGame.jack"
+            ]
         }
     ]
 }

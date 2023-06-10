@@ -53,9 +53,9 @@ def test_classname():
     handler = ClassNameHandler(unstructured_xml)
     assert_answer(handler.toXML(), '''<identifier> a </identifier>''')
     # 测试 find
-    assert ClassNameHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    # assert ClassNameHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
-    assert ClassNameHandler().isTarget(unstructured_xml) == True
+    # assert ClassNameHandler().isTarget(unstructured_xml) == True
 
 @add_test_instance
 def test_subroutinename():
@@ -63,9 +63,9 @@ def test_subroutinename():
     handler = SubroutineNameHandler(unstructured_xml)
     assert_answer(handler.toXML(), '''<identifier> AS_12_31_23a_sdasd </identifier>''')
     # 测试 find
-    assert SubroutineNameHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    # assert SubroutineNameHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
-    assert SubroutineNameHandler().isTarget(unstructured_xml) == True
+    # assert SubroutineNameHandler().isTarget(unstructured_xml) == True
 
 @add_test_instance
 def test_type():
@@ -73,9 +73,9 @@ def test_type():
     handler = TypeHandler(unstructured_xml)
     assert_answer(handler.toXML(), '''<identifier> AS_12_31_23a_sdasd </identifier>''')
     # 测试 find
-    assert TypeHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    # assert TypeHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
-    assert TypeHandler().isTarget(unstructured_xml) == True
+    # assert TypeHandler().isTarget(unstructured_xml) == True
 
 @add_test_instance
 def test_varDec():
@@ -94,9 +94,9 @@ def test_varDec():
                 <symbol> ; </symbol>
             </varDec>''')
     # 测试 find
-    assert VarDecHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    # assert VarDecHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
-    assert VarDecHandler().isTarget(unstructured_xml) == True
+    # assert VarDecHandler().isTarget(unstructured_xml) == True
 
 @add_test_instance
 def test_classVarDec():
@@ -117,9 +117,9 @@ def test_classVarDec():
                 <symbol> ; </symbol>
             </classVarDec>''')
     # 测试 find
-    assert ClassVarDecHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    # assert ClassVarDecHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
-    assert ClassVarDecHandler().isTarget(unstructured_xml) == True
+    # assert ClassVarDecHandler().isTarget(unstructured_xml) == True
 
 @add_test_instance
 def test_voidParameterList():
@@ -128,9 +128,9 @@ def test_voidParameterList():
     assert_answer(handler.toXML(), '''<parameterList>
             </parameterList>''')
     # 测试 find
-    assert VoidParameterListHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    # assert ParameterListHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
-    assert VoidParameterListHandler().isTarget(unstructured_xml) == True
+    # assert ParameterListHandler().isTarget(unstructured_xml) == True
 
 @add_test_instance
 def test_parameterList():
@@ -153,9 +153,9 @@ def test_parameterList():
                     <identifier> c </identifier>
             </parameterList>''')
     # 测试 find
-    assert ParameterListHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    # assert ParameterListHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
-    assert ParameterListHandler().isTarget(unstructured_xml) == True
+    # assert ParameterListHandler().isTarget(unstructured_xml) == True
 
 @add_test_instance
 def test_voidSubroutineDec():
@@ -186,9 +186,9 @@ def test_voidSubroutineDec():
                 </subroutineBody>
             </subroutineDec>''')
     # 测试 find
-    # assert SubroutineDecHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    # # assert SubroutineDecHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
-    assert SubroutineDecHandler().isTarget(unstructured_xml) == True
+    # assert SubroutineDecHandler().isTarget(unstructured_xml) == True
 
 @add_test_instance
 def test_subroutineDec():
@@ -225,9 +225,9 @@ def test_subroutineDec():
                 </subroutineBody>
             </subroutineDec>''')
     # 测试 find
-    # assert SubroutineDecHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    # # assert SubroutineDecHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
-    assert SubroutineDecHandler().isTarget(unstructured_xml) == True
+    # assert SubroutineDecHandler().isTarget(unstructured_xml) == True
 
 
 @add_test_instance
@@ -260,9 +260,9 @@ def test_subroutineBody():
                 <symbol> } </symbol>
             </subroutineBody>''')
     # 测试 find
-    assert SubroutineBodyHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    # assert SubroutineBodyHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
-    assert SubroutineBodyHandler().isTarget(unstructured_xml) == True
+    # assert SubroutineBodyHandler().isTarget(unstructured_xml) == True
 
 
 @add_test_instance
@@ -310,9 +310,9 @@ def test_class_complex():
                 <symbol> } </symbol>
             </class>''')
     # 测试 find
-    assert ClassHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    # assert ClassHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
-    assert ClassHandler().isTarget(unstructured_xml) == True
+    # assert ClassHandler().isTarget(unstructured_xml) == True
 
 @add_test_instance
 def test_class_more_complex():

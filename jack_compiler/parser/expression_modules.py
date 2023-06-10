@@ -86,8 +86,15 @@ class ConstantHandler(SimpleHandler):
             return -1
         
     def toCode(self):
-        result = ''
-        result += 'push constant {0}\n'.format(self.getWord())
+        if self.word_and_type[1] == 'integerConstant':
+            result = 'push constant {0}\n'.format(self.word_and_type[0])
+        else:
+            # 给String.new传入参数
+            result = 'push constant {0}\n'.format(len(self.word_and_type[0]))
+            result += 'call String.new 1\n'
+            for char in self.word_and_type[0]:
+                result += 'push constant {0}\n'.format(ord(char))
+                result += 'call String.appendChar 2\n'
         return result
 
 class UnaryOpHandler(SimpleHandler):
@@ -282,6 +289,7 @@ class ArrayGetHandler(SequenceHandler):
         return self._check_chain
 
     def toCode(self):
+        result = ''
         # 给that赋值
         result += self.children[0].toCode()
         # 计算数组的地址

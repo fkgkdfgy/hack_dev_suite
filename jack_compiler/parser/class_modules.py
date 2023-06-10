@@ -64,10 +64,11 @@ class VarDecHandler(SequenceHandler):
         self.symbol_table = {}
         var_dec_type = self.children[1].getWord()
         index = 0
-        for var_name in self.children[2].children:
-            var_name = var_name.getWord()                
-            self.symbol_table[var_name] = ['local',var_dec_type,index]
-            index += 1
+        for child in self.children[2].children:
+            if isinstance(child,VarNameHandler):
+                var_name = child.getWord()                
+                self.symbol_table[var_name] = ['local',var_dec_type,index]
+                index += 1
 
 class StaticOrFieldHandler(SelectHandler):
     isTerminal = False

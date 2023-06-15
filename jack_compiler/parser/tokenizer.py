@@ -23,22 +23,6 @@ def isIdentifer(word):
             return False
     return True
 
-def removeComment(sentense):
-    result = sentense
-    if '//' in result:
-        index = result.find('//')
-        result = result[0:index]
-    if '/*' in result:
-        index = result.find('/*')
-        result = result[0:index]
-    return result
-
-def removeHeadChar(line):
-    if not line:
-        return line
-    while line and line[0] in [' ','\r','\t']:
-        line = line[1:]
-    return line
 
 class Tokenizer:
     def __init__(self) -> None:
@@ -47,6 +31,7 @@ class Tokenizer:
                          'integerConstant':(isIntegerConstant,common_convert('integerConstant')),
                          'stringConstant':(isStringConstant,string_convert),
                          'identifier':(isIdentifer,common_convert('identifier'))}
+        self.is_processing_long_comment = False
 
     def segementLine(self,line,words):
         # 如果line 为空, 直接返回
@@ -99,8 +84,8 @@ class Tokenizer:
         if not line:
             return '',[]
 
-        line = removeComment(line)
-        line = removeHeadChar(line)
+        line = self.removeComment(line)
+        line = self.removeHeadChar(line)
 
         if not line:
             return '',[]
@@ -115,7 +100,41 @@ class Tokenizer:
             result += xml + "\n"
             words_and_types.append(word_and_type)
         return result,words_and_types
+
+    def removeComment(self,sentense):
+        result = sentense
+        
+        if self.is_processing_long_comment:
+            if '*/' in result:
+                index = result.find('*/')
+                result = result[index+2:]
+                self.is_processing_long_comment = False
+            else:
+                return ''
+            
+        if '/*' in result:
+            start_index = result.find('/*')
+            end_index = result.find('*/')
+            if end_index<0:
+                self.is_processing_long_comment = True
+                result = result[0:start_index]
+            else:
+                result = result[0:start_index] + result[end_index+2:]
+
+        if '//' in result:
+            index = result.find('//')
+            result = result[0:index]
     
+        return result
+    
+
+    def removeHeadChar(self,line):
+        if not line:
+            return line
+        while line and line[0] in [' ','\r','\t']:
+            line = line[1:]
+        return line
+
 if __name__ == "__main__":
     tokenizer = Tokenizer()
     

@@ -225,9 +225,11 @@ class SubroutineDecHandler(SequenceHandler):
         BaseHandler.registrateSymbolTable(self)        
         parameter_list = self.children[4]
         self.symbol_table = parameter_list.symbol_table
-        # 将type 更改为 argument
+        # 将type 更改为 argument, 并且更新index
+        # 考虑到method 方法的args，还有一个this 参数，所以需要将所有的index 都加1
+        offset = 1 if self.getAttr() == 'method' else 0
         for var_name in self.symbol_table:
-            self.symbol_table[var_name] = ['argument',self.symbol_table[var_name][1],self.symbol_table[var_name][2]]
+            self.symbol_table[var_name] = ['argument',self.symbol_table[var_name][1],self.symbol_table[var_name][2]+offset]
 
     def toCode(self):
         self.registrateSymbolTable()

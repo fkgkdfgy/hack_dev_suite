@@ -8,7 +8,7 @@ from grammar import Grammar
 
 # 处理当前目录下的所有.jack 文件
 # 将最终生成的文件放到当前目录下的output 文件夹中
-# 保存的结果是一个a.vm 文件和一个a.xml 文件
+# 保存的结果是一个jack文件，对应一个vm 文件 ie. Main.jack -> Main.vm
 def processDir(dir_path,output_path):
     # 获取所有的jack 文件
     jack_files = []
@@ -36,23 +36,27 @@ def processDir(dir_path,output_path):
     
     # 将total_unstructured_xml 转换成xml 和 vm code
     grammar = Grammar() 
-    xml,code = grammar.processXML(total_unstructured_xml)
+    grammar.processXML(total_unstructured_xml)
 
-    # 将xml 和 vm code 写入到文件中
-    text_io = TextIO(None,os.path.join(output_path,'a.xml'))
-    text_io.write_line(xml)
-    text_io.close_write()
-
-    text_io = TextIO(None,os.path.join(output_path,'a.vm'))
-    text_io.write_line(code)
-    text_io.close_write()
+    # 保存 vm 文件
+    for child in grammar.program_handler.children:
+        xml = child.toXML()
+        code = child.toCode()
+        vm_file_name = child.getClassName() + '.vm'
+        vm_file_path = os.path.join(output_path,vm_file_name)
+        with open(vm_file_path,'w') as f:
+            f.write(code)
+        xml_file_name = child.getClassName() + '.xml'
+        xml_file_path = os.path.join(output_path,xml_file_name)
+        with open(xml_file_path,'w') as f:
+            f.write(xml)
 
 
 if __name__ == '__main__':
 
     # 获取输入参数, 只需要dir 和 output_path两个参数
     # dir 是必须有的参数，output_path 是可选参数
-    # 如果没有指定output_path, 那么默认的output_path 是dir
+    # 如果没有指定output_path, 那么默认的output_path 是dir/output
     parser = argparse.ArgumentParser()
     parser.add_argument('dir', help='the dir of jack files')
     parser.add_argument('-o', '--output_path', help='the output path of vm and xml files')
@@ -62,7 +66,9 @@ if __name__ == '__main__':
     dir_path = os.path.abspath(args.dir)
     output_path = args.output_path
     if not output_path:
-        output_path = dir_path
+        output_path = os.path.join(dir_path,'output')
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
 
     # 检查dir_path 是否存在
     if not os.path.exists(dir_path):

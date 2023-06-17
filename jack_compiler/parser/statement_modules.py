@@ -20,7 +20,10 @@ class MultiStatementHandler(MultiUnitHandler):
         if not hasattr(self, '_options_handlers'):
             self._options_handlers = [StatementHandler()]
         return self._options_handlers
-
+    
+    def processXML(self, unstructured_xml):
+        return MultiUnitHandler.processXML(self, unstructured_xml)
+    
     def toCode(self):
         result = ''
         for child in self.children:
@@ -149,11 +152,17 @@ class IfStatementHandler(SequenceHandler):
         except Exception as e:
             raise StatementException('IfStatementHandler can not find pureIfStatement in {0}'.format(unstructured_xml))
         pure_else_statement_handler = copy.deepcopy(self.check_chain[1][1])
-        try:
-            unstructured_xml = pure_else_statement_handler.processXML(unstructured_xml)
-            self.addChildren([pure_else_statement_handler])
-        except Exception as e:
-            pass
+        if unstructured_xml and unstructured_xml[0][0] == 'else':
+            try:
+                unstructured_xml = pure_else_statement_handler.processXML(unstructured_xml)
+                self.addChildren([pure_else_statement_handler])
+            except Exception as e:
+                xml_to_show = ' '.join([item[0] for item in unstructured_xml][0:10])
+                error_description = '\n'
+                error_description += 'Deeper error: \n{0} \n'.format(e)
+                error_description += 'IfStatementHandler can not find pureElseStatement, When else is found\n'
+                error_description += 'Unstructured_xml is: \n{0}\n'.format(xml_to_show)
+                raise StatementException(error_description)
         return unstructured_xml
     
     def toCode(self):

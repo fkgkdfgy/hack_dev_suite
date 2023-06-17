@@ -86,7 +86,8 @@ class SimpleHandler(BaseHandler):
             self.word_and_type = unstructured_xml[0]
             return unstructured_xml[1:]
         else:
-            raise BaseException("something wrong with {0}, SimpleHandler can not process this.".format(None if not unstructured_xml else unstructured_xml[0]))
+            raise BaseException("something wrong with {0}, SimpleHandler can not process this, the word_and_type is {1}."\
+                                .format(None if not unstructured_xml else unstructured_xml[0:5],self.word_and_type))
 
     def toXML(self):
         if self.word_and_type:
@@ -229,12 +230,22 @@ class SequenceHandler(BaseHandler):
 
     def processXML(self, unstructured_xml):
         self.children = []
-        for check_component in self.check_chain:
+        for index, check_component in enumerate(self.check_chain):
             item_name, handler = check_component
             try:
+                original_unstructured_xml = unstructured_xml
                 unstructured_xml = handler.processXML(unstructured_xml)
             except Exception as e:
-                raise BaseException('Sequence Component {0} processXML error: {1} '.format(item_name, e))
+                check_chain_item_names = [ '{0}: {1}'.format(index, check_component[0]) for index, check_component in enumerate(self.check_chain)]
+                check_chain_to_show = '\n'.join(check_chain_item_names)
+                error_component_to_show = '{0}: {1}'.format(index, item_name)
+                process_unstructured_xml = ' '.join([item[0] for item in original_unstructured_xml][0:10])
+                error_description = '\n'
+                error_description += 'DeeperError: \n{0} \n'.format(e)
+                error_description += 'Check chains: \n{0} \n'.format(check_chain_to_show)
+                error_description += 'Failed Component: \n{0} \n'.format(error_component_to_show)
+                error_description += 'Process Unstructured XML: \n{0} \n'.format(process_unstructured_xml)
+                raise BaseException(error_description)
             self.addChildren([handler])
         return unstructured_xml
 

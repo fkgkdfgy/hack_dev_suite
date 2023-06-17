@@ -384,7 +384,7 @@ def test_class_more_complex():
                 </subroutineDec>
                 <symbol> } </symbol>
             </class>''')
-
+    
 if __name__ == '__main__':
     for test_case in test_instance:
         test_case()

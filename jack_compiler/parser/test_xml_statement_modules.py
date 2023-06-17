@@ -270,7 +270,6 @@ def test_statements_if_statement_complex():
     # assert MultiStatementHandler().isTarget(unstructured_xml) == True
 
 
-
 if __name__ == '__main__':
 
     for test_case in test_instance:

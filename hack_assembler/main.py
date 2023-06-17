@@ -10,8 +10,6 @@ import assembler_translator
 
 from utilis import *
 
-
-
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser(description='hack_assembler is used to translate .asm into .hack')
     arg_parser.add_argument('--asm_file', default=None, type=str)

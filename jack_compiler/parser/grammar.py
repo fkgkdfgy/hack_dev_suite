@@ -20,8 +20,8 @@ class ProgramHandler(BaseHandler):
                 class_handler = ClassHandler()
                 unstructured_xml = class_handler.processXML(unstructured_xml)
                 self.addChildren([class_handler])
-            except:
-                break
+            except Exception as e:
+                raise e                
         return unstructured_xml
     
     def registrateSymbolTable(self):

@@ -72,9 +72,9 @@ add
 push constant 510
 lt
 and
-if-goto IF_TRUE34
-goto IF_FALSE34
-label IF_TRUE34
+if-goto IF_TRUE121
+goto IF_FALSE121
+label IF_TRUE121
 push pointer 0
 call Square.erase 1
 pop temp 0
@@ -85,9 +85,9 @@ pop this 2
 push pointer 0
 call Square.draw 1
 pop temp 0
-goto IF_END34
-label IF_FALSE34
-label IF_END34
+goto IF_END121
+label IF_FALSE121
+label IF_END121
 push constant 0
 return
 function Square.decSize 0
@@ -96,9 +96,9 @@ pop pointer 0
 push this 2
 push constant 2
 gt
-if-goto IF_TRUE35
-goto IF_FALSE35
-label IF_TRUE35
+if-goto IF_TRUE122
+goto IF_FALSE122
+label IF_TRUE122
 push pointer 0
 call Square.erase 1
 pop temp 0
@@ -109,9 +109,9 @@ pop this 2
 push pointer 0
 call Square.draw 1
 pop temp 0
-goto IF_END35
-label IF_FALSE35
-label IF_END35
+goto IF_END122
+label IF_FALSE122
+label IF_END122
 push constant 0
 return
 function Square.moveUp 0
@@ -120,9 +120,9 @@ pop pointer 0
 push this 1
 push constant 1
 gt
-if-goto IF_TRUE36
-goto IF_FALSE36
-label IF_TRUE36
+if-goto IF_TRUE123
+goto IF_FALSE123
+label IF_TRUE123
 push constant 0
 call Screen.setColor 1
 pop temp 0
@@ -158,9 +158,9 @@ push constant 1
 add
 call Screen.drawRectangle 4
 pop temp 0
-goto IF_END36
-label IF_FALSE36
-label IF_END36
+goto IF_END123
+label IF_FALSE123
+label IF_END123
 push constant 0
 return
 function Square.moveDown 0
@@ -171,9 +171,9 @@ push this 2
 add
 push constant 254
 lt
-if-goto IF_TRUE37
-goto IF_FALSE37
-label IF_TRUE37
+if-goto IF_TRUE124
+goto IF_FALSE124
+label IF_TRUE124
 push constant 0
 call Screen.setColor 1
 pop temp 0
@@ -209,9 +209,9 @@ push this 2
 add
 call Screen.drawRectangle 4
 pop temp 0
-goto IF_END37
-label IF_FALSE37
-label IF_END37
+goto IF_END124
+label IF_FALSE124
+label IF_END124
 push constant 0
 return
 function Square.moveLeft 0
@@ -220,9 +220,9 @@ pop pointer 0
 push this 0
 push constant 1
 gt
-if-goto IF_TRUE38
-goto IF_FALSE38
-label IF_TRUE38
+if-goto IF_TRUE125
+goto IF_FALSE125
+label IF_TRUE125
 push constant 0
 call Screen.setColor 1
 pop temp 0
@@ -258,9 +258,9 @@ push this 2
 add
 call Screen.drawRectangle 4
 pop temp 0
-goto IF_END38
-label IF_FALSE38
-label IF_END38
+goto IF_END125
+label IF_FALSE125
+label IF_END125
 push constant 0
 return
 function Square.moveRight 0
@@ -271,9 +271,9 @@ push this 2
 add
 push constant 510
 lt
-if-goto IF_TRUE39
-goto IF_FALSE39
-label IF_TRUE39
+if-goto IF_TRUE126
+goto IF_FALSE126
+label IF_TRUE126
 push constant 0
 call Screen.setColor 1
 pop temp 0
@@ -309,8 +309,8 @@ push this 2
 add
 call Screen.drawRectangle 4
 pop temp 0
-goto IF_END39
-label IF_FALSE39
-label IF_END39
+goto IF_END126
+label IF_FALSE126
+label IF_END126
 push constant 0
 return

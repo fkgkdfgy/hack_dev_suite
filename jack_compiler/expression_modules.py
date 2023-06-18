@@ -186,6 +186,16 @@ class ExpressionHandler(MultiUnitHandler):
         except Exception as e:
             pass
         return unstructured_xml
+    
+    def toCode(self):
+        result = ''
+        term_handlers = [child for child in self.children if child.label == 'term']
+        op_handlers = [child for child in self.children if child.label == 'op']
+        result += term_handlers[0].toCode()
+        for term_handler, op_handler in zip(term_handlers[1:], op_handlers):
+            result += term_handler.toCode()
+            result += op_handler.toCode()
+        return result
 
 class PureFunctionCallHandler(SequenceHandler):
     isTerminal = False

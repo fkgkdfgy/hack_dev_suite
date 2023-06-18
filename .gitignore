@@ -1,2 +1,8 @@
 *.pyc
 log.txt
+
+jack_compiler/test_material/Pong/output
+jack_compiler/test_material/Pong/error.txt
+
+jack_compiler/test_material/Square/output
+jack_compiler/test_material/Square/error.txt

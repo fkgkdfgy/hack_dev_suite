@@ -93,7 +93,7 @@ class SimpleHandler(BaseHandler):
         if self.word_and_type:
             return common_convert(self.word_and_type[1])(self.word_and_type[0])
         raise BaseException("self.word_and_type is not defined in SimpleHandler")
-
+    
     def getWord(self):
         if self.word_and_type:
             return self.word_and_type[0]
@@ -146,6 +146,12 @@ class MultiUnitHandler(BaseHandler):
         for child in self.children:
             self.xml += child.toXML()
         return BaseHandler.toXML(self)
+    
+    def toCode(self):
+        code = ''
+        for child in self.children:
+            code += child.toCode()
+        return code
 
 class EmptyHandler(BaseHandler):
     isTerminal = False

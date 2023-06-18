@@ -44,7 +44,7 @@ def process_dir(dir_path):
                     file_error[file_name].append('line {0} is different\n'.format(index))
                     file_error[file_name].append('reference line is {0}\n'.format(reference_line))
                     file_error[file_name].append('output line is {0}\n'.format(output_line))
-                    break
+                    continue
             if len(file_error[file_name]) == 0:
                 print('file {0} is correct\n'.format(file_name))
     # 3. export file_error into output_path/../error.txt
@@ -52,6 +52,8 @@ def process_dir(dir_path):
     with open(error_file_path,'w') as f:
         for file_name, error_lines in file_error.items():
             f.write('FILE {0} has error\n'.format(file_name))
+            f.write('FILE ERROR NUM: {0}\n'.format(len(error_lines)))
+            f.write('---------------------\n')
             for error_line in error_lines:
                 f.write(error_line)
 

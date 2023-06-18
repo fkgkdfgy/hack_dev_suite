@@ -13,6 +13,7 @@ class VarNameHandler(NameHandler):
             description_of_variable = self.parent_handler.searchVariable(self.getWord())
         except:
             raise Exception('Variable {0} not defined'.format(self.getWord()))
+        print(self.getWord())
         result = 'push {0} {1}\n'.format(description_of_variable[0], description_of_variable[2])
         return result
 
@@ -122,18 +123,33 @@ class ExpressionListHandler(MultiUnitHandler):
     
     empty_allowed = True
 
-    @property
-    def base_handler(self):
-        if not hasattr(self, '_base_handler'):
-            self._base_handler = ExpressionHandler()
-        return self._base_handler
-    
-    @property
-    def options_handlers(self):
-        if not hasattr(self, '_options_handlers'):
-            self._options_handlers = [SupportHandler((',', 'symbol')), ExpressionHandler()]
-        return self._options_handlers
-    
+    def processXML(self, unstructured_xml):
+        try:
+            expression_handler = ExpressionHandler()
+            unstructured_xml = expression_handler.processXML(unstructured_xml)
+            self.addChildren([expression_handler])
+        except Exception as e:
+            pass
+        while unstructured_xml:
+            origin_unstructured_xml = copy.deepcopy(unstructured_xml)
+            try:
+                comma_handler = SupportHandler((',', 'symbol'))
+                unstructured_xml = comma_handler.processXML(unstructured_xml)
+                self.addChildren([comma_handler])
+            except Exception as e:
+                unstructured_xml = origin_unstructured_xml
+                break
+            try:
+                expression_handler = ExpressionHandler()
+                unstructured_xml = expression_handler.processXML(unstructured_xml)
+                self.addChildren([expression_handler])
+            except Exception as e:
+                error_description = '\n'
+                error_description += 'Deeper Error: \n{0}\n'.format(e)
+                error_description += 'Expression , ... , Non-Expression\n'
+                raise Exception(error_description)
+        return unstructured_xml        
+
     def toCode(self):
         expression_handlers = [child for child in self.children if child.label == 'expression']
         result = ''
@@ -148,33 +164,28 @@ class ExpressionHandler(MultiUnitHandler):
     isTerminal = True
     label = 'expression'
 
-    empty_allowed = False
-    @property
-    def base_handler(self):
-        if not hasattr(self, '_base_handler'):
-            self._base_handler = TermHandler()
-        return self._base_handler
-    
-    @property
-    def options_handlers(self):
-        if not hasattr(self, '_options_handlers'):
-            self._options_handlers = [OpHandler(), TermHandler()]
-        return self._options_handlers
-    
-    def toCode(self):
-        if len(self.children) == 0:
-            raise Exception('Empty expression')
-        if len(self.children) == 1:
-            result = self.children[0].toCode()
-        else:
-            op_handlers = [child for child in self.children if child.label == 'op']
-            term_handlers = [child for child in self.children if child.label == 'term']
-            result = ''
-            result += term_handlers[0].toCode()
-            for i in range(len(op_handlers)):
-                result += term_handlers[i+1].toCode()
-                result += op_handlers[i].toCode()
-        return result
+    def processXML(self, unstructured_xml):
+        try:
+            term_handler = TermHandler()
+            unstructured_xml = term_handler.processXML(unstructured_xml)
+            self.addChildren([term_handler])
+        except Exception as e:
+            xml_to_show = ' '.join([item[0] for item in unstructured_xml[:10]])
+            raise Exception('can not find term in {0}'.format(xml_to_show))
+        try:
+            op_handler = OpHandler()
+            unstructured_xml = op_handler.processXML(unstructured_xml)
+            try:
+                self.addChildren([op_handler])
+                unstructured_xml = self.processXML(unstructured_xml)
+            except Exception as e:
+                error_description = '\n'
+                error_description += 'Deeper Error: \n{0}\n'.format(e)
+                error_description += 'Term Op Non-Term\n'
+                raise Exception(error_description)
+        except Exception as e:
+            pass
+        return unstructured_xml
 
 class PureFunctionCallHandler(SequenceHandler):
     isTerminal = False

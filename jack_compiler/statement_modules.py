@@ -9,21 +9,22 @@ class MultiStatementHandler(MultiUnitHandler):
     label = 'statements'
 
     empty_allowed = True
-
-    @property
-    def base_handler(self):
-        if not hasattr(self, '_base_handler'):
-            self._base_handler = StatementHandler()
-        return self._base_handler
-    @property
-    def options_handlers(self):
-        if not hasattr(self, '_options_handlers'):
-            self._options_handlers = [StatementHandler()]
-        return self._options_handlers
     
     def processXML(self, unstructured_xml):
-        return MultiUnitHandler.processXML(self, unstructured_xml)
-    
+        while unstructured_xml:
+            if unstructured_xml[0][0] not in ['let','if','while','do','return']:
+                return unstructured_xml
+            try:
+                statement_handler = StatementHandler()
+                unstructured_xml = statement_handler.processXML(unstructured_xml)
+                self.addChildren([statement_handler])
+            except Exception as e:
+                error_description = '\n'
+                error_description += 'Deeper error: \n{}\n'.format(e)
+                error_description += 'statement; ...; None-statement;\n'
+                raise StatementException(error_description)      
+        return unstructured_xml
+
     def toCode(self):
         result = ''
         for child in self.children:

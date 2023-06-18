@@ -60,6 +60,7 @@ class ProgramHandler(BaseHandler):
         class_names.extend(['Array','String','Math','Output','Screen','Keyboard','Memory','Sys'])
         if symbol in class_names:
             return [None,'class',None]
+        raise GrammarException('can not find symbol {0}'.format(symbol))
 
     def toCode(self):
         code = ''

@@ -27,23 +27,30 @@ class TypeHandler(SimpleHandler):
 class MultiVarNameHandler(MultiUnitHandler):
     isTerminal = False
     label = 'multi_varName'
-    empty_allowed = False
 
-    @property
-    def base_handler(self):
-        if not hasattr(self,'_base_handler'):
-            self._base_handler = VarNameHandler()
-        return self._base_handler
+    def processXML(self, unstructured_xml):
+        try:
+            var_name_handler = VarNameHandler()
+            unstructured_xml = var_name_handler.processXML(unstructured_xml)
+            self.addChildren([var_name_handler])
+        except Exception as e:
+            error_description = '\n'
+            error_description += 'Deeper error: \n{}\n'.format(e)
+            error_description += 'varName,...,Non-varName\n'
+            raise ClassException(error_description)
+        if unstructured_xml[0][0] == ',':
+            comma_handler = SupportHandler((',', 'symbol'))
+            unstructured_xml = comma_handler.processXML(unstructured_xml)
+            self.addChildren([comma_handler])
+            try:
+                unstructured_xml = self.processXML(unstructured_xml)
+            except Exception as e:
+                error_description = '\n'
+                error_description += 'Deeper error: \n{}\n'.format(e)
+                error_description += 'varName,...,Non-varName\n'
+                raise ClassException(error_description)
+        return unstructured_xml
     
-    @property
-    def options_handlers(self):
-        if not hasattr(self,'_options_handlers'):
-            self._options_handlers = [SupportHandler((',', 'symbol')),VarNameHandler()]
-        return self._options_handlers
-    
-    def registrateSymbolTable(self):
-        pass
-
 # verDec 的结构是 type varName (, varName)* ;
 class VarDecHandler(SequenceHandler):
     isTerminal = True
@@ -112,25 +119,41 @@ class ClassVarDecHandler(SequenceHandler):
                 self.symbol_table[var_name] = [var_dec_attr,var_dec_type,index]
                 index += 1
 
-class ParameterListHandler(MultiStatementHandler):
+class ParameterListHandler(MultiUnitHandler):
     isTerminal = True
     label = 'parameterList'
     empty_allowed = True
-    @property
-    def base_handler(self):
-        if not hasattr(self,'_base_handler'):
-            self._base_handler = [TypeHandler(),VarNameHandler()]
-        return self._base_handler
     
-    @property
-    def options_handlers(self):
-        if not hasattr(self,'_options_handlers'):
-            self._options_handlers = [SupportHandler((',', 'symbol')),TypeHandler(),VarNameHandler()]
-        return self._options_handlers
+    def processXML(self, unstructured_xml):
+        param_unit_handler_template = SequenceHandler()
+        param_unit_handler_template.check_chain = [
+            ('type',TypeHandler()),
+            ('varName',VarNameHandler())
+        ]
+        try:
+            param_unit_handler = copy.deepcopy(param_unit_handler_template)
+            unstructured_xml = param_unit_handler.processXML(unstructured_xml)
+            self.addChildren([param_unit_handler])
+        except Exception as e:
+            return unstructured_xml
+        while unstructured_xml:
+            if unstructured_xml[0][0] != ',':
+                break
+            comma_handler = SupportHandler((',', 'symbol'))
+            unstructured_xml = comma_handler.processXML(unstructured_xml)
+            self.addChildren([comma_handler])
+            try:
+                unstructured_xml = self.processXML(unstructured_xml)
+            except Exception as e:
+                error_description = '\n'
+                error_description += 'Deeper error: \n{}\n'.format(e)
+                error_description += 'type varName,...,Non-type varName\n'
+                raise ClassException(error_description) 
+        return unstructured_xml
     
     def registrateSymbolTable(self):
-        var_types = [child for child in self.children if isinstance(child,TypeHandler)]
-        var_names = [child for child in self.children if isinstance(child,VarNameHandler)]
+        var_types = [child.children[0] for child in self.children if isinstance(child,SequenceHandler) ]
+        var_names = [child.children[1] for child in self.children if isinstance(child,SequenceHandler) ]
         if len(var_types) != len(var_names):
             raise ClassException('var_types: {0} and var_names: {1} are not equal'.format(var_types,var_names))
         self.symbol_table = {}
@@ -142,11 +165,7 @@ class ParameterListHandler(MultiStatementHandler):
             index += 1
 
     def getParameterNum(self):
-        count = 0
-        for child in self.children:
-            if isinstance(child,VarNameHandler):
-                count += 1
-        return count
+        return len([child for child in self.children if isinstance(child,SequenceHandler)])
 
 class ConstructorOrFunctionOrMethodHandler(SelectHandler):
     isTerminal = False
@@ -269,18 +288,24 @@ class MultiVarDecHandler(MultiUnitHandler):
     isTerminal = False
     label = 'multi_varDec'
     empty_allowed = True
-    @property
-    def base_handler(self):
-        if not hasattr(self,'_base_handler'):
-            self._base_handler = VarDecHandler()
-        return self._base_handler
-    
-    @property
-    def options_handlers(self):
-        if not hasattr(self,'_options_handlers'):
-            self._options_handlers = [VarDecHandler()]
-        return self._options_handlers
-    
+
+    def processXML(self, unstructured_xml):
+        while unstructured_xml:
+            if unstructured_xml[0][0] != 'var':
+                if len(self.children)==0 and not self.empty_allowed:
+                    raise ClassException('the first token is not var')
+                return unstructured_xml
+            try:
+                var_dec_handler = VarDecHandler()
+                unstructured_xml = var_dec_handler.processXML(unstructured_xml)
+                self.addChildren([var_dec_handler])
+            except Exception as e:
+                error_description = '\n'
+                error_description += 'Deeper error: \n{}\n'.format(e)
+                error_description += 'varDec;... Non-varDec\n'
+                raise ClassException(error_description)
+        return unstructured_xml
+
     def registrateSymbolTable(self):
         self.symbol_table = {}
         
@@ -334,18 +359,24 @@ class MultiClassVarDecHandler(MultiUnitHandler):
     isTerminal = False
     label = 'multi_classVarDec'
     empty_allowed = True
-    @property
-    def base_handler(self):
-        if not hasattr(self,'_base_handler'):
-            self._base_handler = ClassVarDecHandler()
-        return self._base_handler
     
-    @property
-    def options_handlers(self):
-        if not hasattr(self,'_options_handlers'):
-            self._options_handlers = [ClassVarDecHandler()]
-        return self._options_handlers
-    
+    def processXML(self, unstructured_xml):
+        while unstructured_xml:
+            if unstructured_xml[0][0] not in ['static','field']:
+                if len(self.children)==0 and not self.empty_allowed:
+                    raise ClassException('the first token is not static or field')
+                return unstructured_xml
+            try:
+                class_var_dec_handler = ClassVarDecHandler()
+                unstructured_xml = class_var_dec_handler.processXML(unstructured_xml)
+                self.addChildren([class_var_dec_handler])
+            except Exception as e:
+                error_description = '\n'
+                error_description += 'Deeper error: \n{}\n'.format(e)
+                error_description += 'classVarDec;... Non-classVarDec\n'
+                raise ClassException(error_description)
+        return unstructured_xml
+
     def registrateSymbolTable(self):
         self.symbol_table={}
         for child in self.children:
@@ -375,24 +406,23 @@ class MultiSubroutineDecHandler(MultiUnitHandler):
     isTerminal = False
     label = 'multi_subroutineDec'
     empty_allowed = True
-    @property
-    def base_handler(self):
-        if not hasattr(self,'_base_handler'):
-            self._base_handler = SubroutineDecHandler()
-        return self._base_handler
     
-    @property
-    def options_handlers(self):
-        if not hasattr(self,'_options_handlers'):
-            self._options_handlers = [SubroutineDecHandler()]
-        return self._options_handlers
-    
-    def toCode(self):
-        result_code = ''
-        for child in self.children:
-            result_code += child.toCode()
-        return result_code
-
+    def processXML(self, unstructured_xml):
+        while unstructured_xml:
+            if unstructured_xml[0][0] not in ['constructor','function','method']:
+                if len(self.children)==0 and not self.empty_allowed:
+                    raise ClassException('the first token is not constructor or function or method')
+                return unstructured_xml
+            try:
+                subroutine_dec_handler = SubroutineDecHandler()
+                unstructured_xml = subroutine_dec_handler.processXML(unstructured_xml)
+                self.addChildren([subroutine_dec_handler])
+            except Exception as e:
+                error_description = '\n'
+                error_description += 'Deeper error: \n{}\n'.format(e)
+                error_description += 'subroutineDec;... Non-subroutineDec\n'
+                raise ClassException(error_description)
+        return unstructured_xml
 class ClassHandler(SequenceHandler):
     isTerminal = True
     label = 'class'

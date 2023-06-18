@@ -139,55 +139,7 @@ class MultiUnitHandler(BaseHandler):
 
     def __init__(self,unstructed_xml=None):
         self.children = []
-        if isinstance(self.base_handler,list):
-            for handler in self.base_handler:
-                if isinstance(handler,EmptyHandler):
-                    raise BaseException('base_handler can not be EmptyHandler')
-        if isinstance(self.base_handler,EmptyHandler):
-            raise BaseException('base_handler can not be EmptyHandler')
-        if len(self.options_handlers) == 0:
-            raise BaseException('options_handlers can not be empty')
-        for handler in self.options_handlers:
-            if isinstance(handler,EmptyHandler):
-                raise BaseException('options_handlers can not have EmptyHandler')
         BaseHandler.__init__(self,unstructed_xml)
-    
-    def processXML(self, unstructured_xml):
-        self.children = []
-        if isinstance(self.base_handler,list):
-            pair_children = []
-            unprocessed_xml = unstructured_xml
-            for handler in self.base_handler:
-                try:
-                    unstructured_xml = handler.processXML(unstructured_xml)
-                    pair_children.append(handler)
-                except Exception as e:
-                    if not self.empty_allowed:
-                        raise BaseException('MultiUnitHandler can not find base_handler in {0}'.format(unstructured_xml))
-                    return unprocessed_xml
-            self.addChildren(pair_children)
-        else:
-            try:
-                base_handler = copy.deepcopy(self.base_handler)
-                unstructured_xml = base_handler.processXML(unstructured_xml)
-                self.addChildren([base_handler])
-            except Exception as e:
-                if not self.empty_allowed:
-                    raise BaseException('MultiUnitHandler can not find base_handler in {0}'.format(unstructured_xml))
-                return unstructured_xml
-        while unstructured_xml:
-            try:
-                pair_children = []
-                unprocessed_xml = unstructured_xml
-                for option_handler in self.options_handlers:
-                    handler = copy.deepcopy(option_handler)
-                    unstructured_xml = handler.processXML(unstructured_xml)
-                    pair_children.append(handler)
-                self.addChildren(pair_children)
-            except Exception as e:
-                unstructured_xml = unprocessed_xml
-                break
-        return unstructured_xml
     
     def toXML(self):
         self.xml = ''
@@ -241,8 +193,9 @@ class SequenceHandler(BaseHandler):
                 error_component_to_show = '{0}: {1}'.format(index, item_name)
                 process_unstructured_xml = ' '.join([item[0] for item in original_unstructured_xml][0:10])
                 error_description = '\n'
+                error_description += 'Handler Module: {0} \n'.format(self.label)
                 error_description += 'DeeperError: \n{0} \n'.format(e)
-                error_description += 'Check chains: \n{0} \n'.format(check_chain_to_show)
+                error_description += 'Check Chains: \n{0} \n'.format(check_chain_to_show)
                 error_description += 'Failed Component: \n{0} \n'.format(error_component_to_show)
                 error_description += 'Process Unstructured XML: \n{0} \n'.format(process_unstructured_xml)
                 raise BaseException(error_description)

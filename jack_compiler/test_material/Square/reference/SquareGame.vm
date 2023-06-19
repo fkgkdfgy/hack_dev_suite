@@ -86,13 +86,15 @@ pop local 1
 label WHILE_EXP15
 push local 1
 not
-not
+push constant 0
+eq
 if-goto WHILE_END15
 label WHILE_EXP16
 push local 0
 push constant 0
 eq
-not
+push constant 0
+eq
 if-goto WHILE_END16
 call Keyboard.keyPressed 0
 pop local 0
@@ -186,7 +188,8 @@ push local 0
 push constant 0
 eq
 not
-not
+push constant 0
+eq
 if-goto WHILE_END17
 call Keyboard.keyPressed 0
 pop local 0

@@ -93,7 +93,8 @@ pop pointer 0
 label WHILE_EXP6
 push this 3
 not
-not
+push constant 0
+eq
 if-goto WHILE_END6
 label WHILE_EXP7
 push local 0
@@ -102,7 +103,8 @@ eq
 push this 3
 not
 and
-not
+push constant 0
+eq
 if-goto WHILE_END7
 call Keyboard.keyPressed 0
 pop local 0
@@ -163,7 +165,8 @@ not
 push this 3
 not
 and
-not
+push constant 0
+eq
 if-goto WHILE_END8
 call Keyboard.keyPressed 0
 pop local 0

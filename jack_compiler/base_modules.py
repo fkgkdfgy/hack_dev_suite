@@ -200,7 +200,8 @@ class SequenceHandler(BaseHandler):
                 process_unstructured_xml = ' '.join([item[0] for item in original_unstructured_xml][0:10])
                 error_description = '\n'
                 error_description += 'Handler Module: {0} \n'.format(self.label)
-                error_description += 'DeeperError: \n{0} \n'.format(e)
+                error_description += 'DeeperError({1}): \n{0} \n'.format(e,self.label)
+                error_description += 'DeeperError({0}) End \n'.format(self.label)
                 error_description += 'Check Chains: \n{0} \n'.format(check_chain_to_show)
                 error_description += 'Failed Component: \n{0} \n'.format(error_component_to_show)
                 error_description += 'Process Unstructured XML: \n{0} \n'.format(process_unstructured_xml)
@@ -230,6 +231,7 @@ class SelectHandler(BaseHandler):
         simple_handlers = [ handler for handler in self.candidates.values() if isinstance(handler,SimpleHandler)]
         not_simple_handlers = [ handler for handler in self.candidates.values() if not isinstance(handler,SimpleHandler)]
 
+        error_list = {}
         for handler in not_simple_handlers:
             try: 
                 left_xml = handler.processXML(unstructured_xml)
@@ -237,6 +239,7 @@ class SelectHandler(BaseHandler):
                 self.addChildren([self.selected_candidate])
                 return left_xml
             except Exception as e:
+                error_list[handler.label] = e
                 continue
         for handler in simple_handlers:
             try: 
@@ -245,9 +248,13 @@ class SelectHandler(BaseHandler):
                 self.addChildren([self.selected_candidate])
                 return left_xml
             except Exception as e:
+                error_list[handler.label] = e
                 continue
-
-        raise BaseException("SelectHandler can not find a valid candidate")
+        error_description = '\n'
+        error_description += 'Handler Module: {0} \n'.format(self.label)
+        error_description += 'Candidates Modules: \n{0} \n'.format('\n'.join([handler.label for handler in self.candidates.values()]))
+        error_description += 'Error List: \n{0} \n'.format('\n'.join(['{0}: {1}'.format(label, error) for label, error in error_list.items()]))
+        raise BaseException(error_description)
 
     def toXML(self):
         self.xml=''

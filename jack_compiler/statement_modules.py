@@ -33,8 +33,8 @@ class MultiStatementHandler(MultiUnitHandler):
             result += statement_code
         return result
     
-class LetStatementHandler(SequenceHandler):
-    isTerminal = True
+class SimpleLetStatementHandler(SequenceHandler):
+    isTerminal = False
     label = 'letStatement'
 
     @property
@@ -61,7 +61,7 @@ class LetStatementHandler(SequenceHandler):
             raise StatementException('LetStatementHandler can not find varName in {0}'.format(self.children[1].getWord()))
 
 class LetArrayStatementHandler(SequenceHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'letStatement'
 
     @property
@@ -96,6 +96,19 @@ class LetArrayStatementHandler(SequenceHandler):
             return result
         except Exception as e:
             raise StatementException('LetArrayStatementHandler can not find varName in {0}'.format(self.children[1].getWord()))
+
+class LetStatementHandler(SelectHandler):
+    isTerminal = True
+    label = 'letStatement'
+
+    @property
+    def candidates(self):
+        if not hasattr(self, '_candidates'):
+            self._candidates = {
+                'simpleLetStatement': SimpleLetStatementHandler(),
+                'letArrayStatement': LetArrayStatementHandler()
+            }
+        return self._candidates
 
 class PureIfStatementHandler(SequenceHandler):
     isTerminal = False
@@ -259,7 +272,7 @@ class DoStatementHandler(SequenceHandler):
         return result
 
 class VoidReturnStatementHandler(SequenceHandler):
-    isTerminal = True
+    isTerminal = False
     label = 'returnStatement'
 
     @property
@@ -277,8 +290,8 @@ class VoidReturnStatementHandler(SequenceHandler):
         result += 'return\n'
         return result
 
-class ReturnStatementHandler(SequenceHandler):
-    isTerminal = True
+class ActualReturnStatementHandler(SequenceHandler):
+    isTerminal = False
     label = 'returnStatement'
 
     @property
@@ -298,21 +311,43 @@ class ReturnStatementHandler(SequenceHandler):
         result += 'return\n'
         return result
 
-class StatementHandler(SelectHandler):    
-    isTerminal = False
-    label = 'statement'
+class ReturnStatementHandler(SelectHandler):
+    isTerminal = True
+    label = 'returnStatement'
 
     @property
     def candidates(self):
         if not hasattr(self, '_candidates'):
             self._candidates = {
-                'letStatement': LetStatementHandler(),
-                'letArrayStatement': LetArrayStatementHandler(),
-                'ifStatement': IfStatementHandler(),
-                'whileStatement': WhileStatementHandler(),
-                'doStatement': DoStatementHandler(),
-                'returnStatement': ReturnStatementHandler(),
-                'voidReturnStatement': VoidReturnStatementHandler()
+                'voidReturn': VoidReturnStatementHandler(),
+                'actualReturn': ActualReturnStatementHandler()
             }
         return self._candidates
+
+class StatementHandler(SelectHandler):    
+    isTerminal = False
+    label = 'statement'
     
+    def processXML(self, unstructured_xml):
+        if not unstructured_xml:
+            raise StatementException('StatementHandler can not find any statement')
+        if unstructured_xml[0][0] not in ['let','if','while','do','return']:
+            raise StatementException('StatementHandler can not find any statement with the first word {0}'.format(unstructured_xml[0][0]))
+        keyword_to_handler = {
+            'let': LetStatementHandler(),
+            'if': IfStatementHandler(),
+            'while': WhileStatementHandler(),
+            'do': DoStatementHandler(),
+            'return': ReturnStatementHandler()
+        }
+        target_keyword = unstructured_xml[0][0]
+        target_handler = keyword_to_handler[target_keyword]
+        try:
+            unstructured_xml = target_handler.processXML(unstructured_xml)
+            self.selected_candidate = target_handler
+        except Exception as e:
+            error_description = '\n'
+            error_description += 'Deeper error: \n{}\n'.format(e)
+            error_description += 'statement; ...; None-statement;\n'
+            raise StatementException(error_description)
+        return unstructured_xml

@@ -345,6 +345,7 @@ class StatementHandler(SelectHandler):
         try:
             unstructured_xml = target_handler.processXML(unstructured_xml)
             self.selected_candidate = target_handler
+            self.addChildren([target_handler])
         except Exception as e:
             error_description = '\n'
             error_description += 'Deeper Error({0}): \n{1}\n'.format(self.label,e)

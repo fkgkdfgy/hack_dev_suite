@@ -153,29 +153,6 @@ class MultiUnitHandler(BaseHandler):
             code += child.toCode()
         return code
 
-class EmptyHandler(BaseHandler):
-    isTerminal = False
-    label = 'empty'
-
-    def __init__(self, unstructed_xml=None):
-        self.xml = ''
-
-    def processXML(self, unstructured_xml):
-        self.xml = '' 
-        return self.toXML()
-
-    def toXML(self):
-        return ''
-    
-    def isTarget(self,unstructured_xml):
-        if not unstructured_xml:
-            return True
-        return False
-    
-    # 因为是找空白所以永远不可能失败
-    def findTarget(self,unstructured_xml):
-        return 0
-
 class SequenceHandler(BaseHandler):
     isTerminal = False
     # check_chain 内部是多个handler

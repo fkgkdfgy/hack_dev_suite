@@ -48,7 +48,7 @@ def test_let_statement():
 @add_test_instance
 def test_let_statement_array():
     _,unstructured_xml = segmentCodes('''let x[1] = 1;''')
-    handler = LetArrayStatementHandler(unstructured_xml)
+    handler = LetStatementHandler(unstructured_xml)
     assert_answer(handler.toXML(), '''<letStatement> <keyword> let </keyword> <identifier> x </identifier> <symbol> [ </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ] </symbol> <symbol> = </symbol> <expression> <term> <integerConstant> 1 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement>''')
     # 测试 find
     # assert LetArrayStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
@@ -108,7 +108,7 @@ def test_return_statement():
 @add_test_instance
 def test_return_statement_void():
     _,unstructured_xml = segmentCodes('''return     ;''')
-    handler = VoidReturnStatementHandler(unstructured_xml)
+    handler = ReturnStatementHandler(unstructured_xml)
     assert_answer(handler.toXML(), '''<returnStatement> <keyword> return </keyword> <symbol> ; </symbol> </returnStatement>''')
     # 测试 find
     # assert ReturnStatementHandler().findTarget(unstructured_xml) == len(unstructured_xml)
@@ -269,7 +269,14 @@ def test_statements_if_statement_complex():
     # 测试 is
     # assert MultiStatementHandler().isTarget(unstructured_xml) == True
 
-
+@add_test_instance
+def test_statements_actual_instance1():
+    _,unstructured_xml = segmentCodes('''
+    let try_index = 15;
+    let something = 0;
+    ''')
+    handler = MultiStatementHandler(unstructured_xml)
+    assert_answer(handler.toXML(), '''<statements> <letStatement> <keyword> let </keyword> <identifier> try_index </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 15 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement> <letStatement> <keyword> let </keyword> <identifier> something </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 0 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement> </statements>''')
 if __name__ == '__main__':
 
     for test_case in test_instance:

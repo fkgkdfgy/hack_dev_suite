@@ -229,7 +229,8 @@ class WhileStatementHandler(SequenceHandler):
         result += 'label '+ label1 + '\n'
         expression = self.children[2]
         result += expression.toCode()
-        result += 'not\n'
+        result += 'push constant 0' + '\n'
+        result += 'eq'+ '\n'
         result += 'if-goto ' + label2 + '\n'
         statements = self.children[5]
         result += statements.toCode()

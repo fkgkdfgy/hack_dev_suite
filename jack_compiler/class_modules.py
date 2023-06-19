@@ -35,7 +35,7 @@ class MultiVarNameHandler(MultiUnitHandler):
             self.addChildren([var_name_handler])
         except Exception as e:
             error_description = '\n'
-            error_description += 'Deeper error: \n{}\n'.format(e)
+            error_description += 'Deeper Error({0}): \n{1}\n'.format(self.label,e)
             error_description += 'varName,...,Non-varName\n'
             raise ClassException(error_description)
         if unstructured_xml[0][0] == ',':
@@ -46,7 +46,7 @@ class MultiVarNameHandler(MultiUnitHandler):
                 unstructured_xml = self.processXML(unstructured_xml)
             except Exception as e:
                 error_description = '\n'
-                error_description += 'Deeper error: \n{}\n'.format(e)
+                error_description += 'Deeper Error({0}): \n{1}\n'.format(self.label,e)
                 error_description += 'varName,...,Non-varName\n'
                 raise ClassException(error_description)
         return unstructured_xml
@@ -146,7 +146,7 @@ class ParameterListHandler(MultiUnitHandler):
                 unstructured_xml = self.processXML(unstructured_xml)
             except Exception as e:
                 error_description = '\n'
-                error_description += 'Deeper error: \n{}\n'.format(e)
+                error_description += 'Deeper Error({0}): \n{1}\n'.format(self.label,e)
                 error_description += 'type varName,...,Non-type varName\n'
                 raise ClassException(error_description) 
         return unstructured_xml
@@ -301,7 +301,7 @@ class MultiVarDecHandler(MultiUnitHandler):
                 self.addChildren([var_dec_handler])
             except Exception as e:
                 error_description = '\n'
-                error_description += 'Deeper error: \n{}\n'.format(e)
+                error_description += 'Deeper Error({0}): \n{1}\n'.format(self.label,e)
                 error_description += 'varDec;... Non-varDec\n'
                 raise ClassException(error_description)
         return unstructured_xml
@@ -372,7 +372,7 @@ class MultiClassVarDecHandler(MultiUnitHandler):
                 self.addChildren([class_var_dec_handler])
             except Exception as e:
                 error_description = '\n'
-                error_description += 'Deeper error: \n{}\n'.format(e)
+                error_description += 'Deeper Error({0}): \n{1}\n'.format(self.label,e)
                 error_description += 'classVarDec;... Non-classVarDec\n'
                 raise ClassException(error_description)
         return unstructured_xml
@@ -419,7 +419,7 @@ class MultiSubroutineDecHandler(MultiUnitHandler):
                 self.addChildren([subroutine_dec_handler])
             except Exception as e:
                 error_description = '\n'
-                error_description += 'Deeper error: \n{}\n'.format(e)
+                error_description += 'Deeper Error({0}): \n{1}\n'.format(self.label,e)
                 error_description += 'subroutineDec;... Non-subroutineDec\n'
                 raise ClassException(error_description)
         return unstructured_xml

@@ -145,7 +145,7 @@ class ExpressionListHandler(MultiUnitHandler):
                 self.addChildren([expression_handler])
             except Exception as e:
                 error_description = '\n'
-                error_description += 'Deeper Error: \n{0}\n'.format(e)
+                error_description += 'Deeper Error({0}): \n{1}\n'.format(self.label,e)
                 error_description += 'Expression , ... , Non-Expression\n'
                 raise Exception(error_description)
         return unstructured_xml        
@@ -180,7 +180,7 @@ class ExpressionHandler(MultiUnitHandler):
                 unstructured_xml = self.processXML(unstructured_xml)
             except Exception as e:
                 error_description = '\n'
-                error_description += 'Deeper Error: \n{0}\n'.format(e)
+                error_description += 'Deeper Error({0}): \n{1}\n'.format(self.label,e)
                 error_description += 'Term Op Non-Term\n'
                 raise Exception(error_description)
         except Exception as e:

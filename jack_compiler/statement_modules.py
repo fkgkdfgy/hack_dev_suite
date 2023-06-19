@@ -20,7 +20,7 @@ class MultiStatementHandler(MultiUnitHandler):
                 self.addChildren([statement_handler])
             except Exception as e:
                 error_description = '\n'
-                error_description += 'Deeper error: \n{}\n'.format(e)
+                error_description += 'Deeper Error({0}): \n{1}\n'.format(self.label,e)
                 error_description += 'statement; ...; None-statement;\n'
                 raise StatementException(error_description)      
         return unstructured_xml
@@ -173,7 +173,7 @@ class IfStatementHandler(SequenceHandler):
             except Exception as e:
                 xml_to_show = ' '.join([item[0] for item in unstructured_xml][0:10])
                 error_description = '\n'
-                error_description += 'Deeper error: \n{0} \n'.format(e)
+                error_description += 'Deeper Error({0}): \n{1}\n'.format(self.label,e)
                 error_description += 'IfStatementHandler can not find pureElseStatement, When else is found\n'
                 error_description += 'Unstructured_xml is: \n{0}\n'.format(xml_to_show)
                 raise StatementException(error_description)
@@ -347,7 +347,7 @@ class StatementHandler(SelectHandler):
             self.selected_candidate = target_handler
         except Exception as e:
             error_description = '\n'
-            error_description += 'Deeper error: \n{}\n'.format(e)
+            error_description += 'Deeper Error({0}): \n{1}\n'.format(self.label,e)
             error_description += 'statement; ...; None-statement;\n'
             raise StatementException(error_description)
         return unstructured_xml

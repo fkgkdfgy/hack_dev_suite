@@ -250,10 +250,10 @@ class ClassFunctionCallHandler(SequenceHandler):
         # 获取对象
         result = ''
         var_name = self.children[0].getWord()
-        # description_of_variable ::= (attribute, type, index)
         try:
             description_of_variable = self.parent_handler.searchVariable(var_name)
-            if not description_of_variable[1] == 'class' :
+            if description_of_variable[1] != 'class' :
+                # 压入指针
                 result += 'push {0} {1}\n'.format(description_of_variable[0], description_of_variable[2])
                 # 压入参数
                 result += self.children[4].toCode()

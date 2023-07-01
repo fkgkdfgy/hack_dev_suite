@@ -136,6 +136,19 @@ def test_term_isUnaryOpTerm():
     # 测试 is
     # assert TermHandler().isTarget(unstructured_xml) == True
 
+
+@add_test_instance
+def test_term_isUnaryOpTerm_border_case():
+    _,unstructured_xml = segmentCodes('''-32768''')
+    handler = UnaryOpTermHandler(unstructured_xml)
+    assert_answer(handler.toXML(), '''<symbol> - </symbol> <term> <integerConstant> 32768 </integerConstant> </term>''')
+    # 测试 find
+    # assert TermHandler().findTarget(unstructured_xml) == len(unstructured_xml)
+    # 测试 is
+    # assert TermHandler().isTarget(unstructured_xml) == True
+
+
+
 @add_test_instance
 def test_term_isTarget():
     _,unstructured_xml = segmentCodes('''(a)''')
@@ -226,6 +239,34 @@ def test_term_isNestedArrayGet():
     # assert TermHandler().findTarget(unstructured_xml) == len(unstructured_xml)
     # 测试 is
     # assert TermHandler().isTarget(unstructured_xml) == True
+
+@add_test_instance
+def test_term_actual_instance1():
+    _,unstructured_xml = segmentCodes('''((((123))))''')
+    handler = TermHandler(unstructured_xml)
+    assert(handler.isNumber()==True)
+
+@add_test_instance
+def test_term_actual_instance2():
+    _,unstructured_xml = segmentCodes('''(32769)''')
+    handler = TermHandler(unstructured_xml)
+    assert(handler.isNumber()==True)
+    try:
+        handler.toCode()
+        print('this is a operation must raise Exception')
+        os.abort
+    except Exception as e:
+        print(e)
+
+
+@add_test_instance
+def test_term_actual_instance3():
+    _,unstructured_xml = segmentCodes('''(-32768)''')
+    handler = TermExpressionHandler(unstructured_xml)
+    assert(handler.isNumber()==True)
+    assert_answer(handler.toXML(), '''
+        <symbol> ( </symbol><expression><term><symbol> - </symbol><term><integerConstant> 32768 </integerConstant></term></term></expression><symbol> ) </symbol>
+        ''')
 
 # code for segmentCodes ::= a+b
 @add_test_instance

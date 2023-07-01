@@ -277,6 +277,15 @@ def test_statements_actual_instance1():
     ''')
     handler = MultiStatementHandler(unstructured_xml)
     assert_answer(handler.toXML(), '''<statements> <letStatement> <keyword> let </keyword> <identifier> try_index </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 15 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement> <letStatement> <keyword> let </keyword> <identifier> something </identifier> <symbol> = </symbol> <expression> <term> <integerConstant> 0 </integerConstant> </term> </expression> <symbol> ; </symbol> </letStatement> </statements>''')
+
+@add_test_instance
+def test_statements_actual_instance2():
+    _,unstructured_xml = segmentCodes('''
+    do draw(32767,-32768);
+    ''')
+    handler = MultiStatementHandler(unstructured_xml)
+
+
 if __name__ == '__main__':
 
     for test_case in test_instance:

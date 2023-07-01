@@ -75,7 +75,9 @@ class OpHandler(SimpleHandler):
         return result
 
 class ValueException(Exception):
-    pass
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self,args,kwargs)
+        self.error_value = 0        
 
 class ConstantHandler(SimpleHandler):
     isTerminal = False
@@ -90,6 +92,8 @@ class ConstantHandler(SimpleHandler):
             return -1
         
     def toCode(self):
+        if self.isNumber() and self.getNumber()>=32768:
+            raise ExpressionException('the illegal number(>=32768:{0}) exists in source code'.format(self.getNumber()))
         if self.word_and_type[1] == 'integerConstant':
             result = 'push constant {0}\n'.format(self.word_and_type[0])
         else:
@@ -100,6 +104,17 @@ class ConstantHandler(SimpleHandler):
                 result += 'push constant {0}\n'.format(ord(char))
                 result += 'call String.appendChar 2\n'
         return result
+    
+    def isNumber(self):
+        return self.getWordType() == 'integerConstant'
+    
+    def isString(self):
+        return self.getWordType() == 'stringConstant'
+    
+    def getNumber(self):
+        if not self.isNumber():
+            raise ExpressionException('try to get number from a string{0}',self.getWord())
+        return int(self.getWord())
 
 class UnaryOpHandler(SimpleHandler):
     isTerminal = False
@@ -296,7 +311,21 @@ class TermExpressionHandler(SequenceHandler):
         result = ''
         result += self.children[1].toCode()
         return result
-    
+
+    # 目前仅处理单个term 的情况，包含计算的情况不进行考虑
+    def isNumber(self):
+        expression_handler_children = self.children[1].children
+        if len(expression_handler_children)==1 and \
+            expression_handler_children[0].isNumber():
+            return True
+        return False
+
+    def getNumber(self):
+        if not self.isNumber():
+            raise ExpressionException('try to get number from a none-pure-value-expression')
+        expression_handler_children = self.children[0].children
+        return int(expression_handler_children[0].getNumber())
+
 class ArrayGetHandler(SequenceHandler):
     isTerminal = False
     label = 'term'
@@ -329,6 +358,10 @@ class UnaryOpTermHandler(SequenceHandler):
     isTerminal = False
     label = 'term'
 
+    def __init__(self, unstructed_xml=None):
+        self.code_children = [] # 为了处理-32768 这种特殊情况，这种情况下xml 应该是正确的，但是生成的code 应该是按照 ~32767生成
+        super().__init__(unstructed_xml)
+
     @property
     def check_chain(self):
         if not hasattr(self, '_check_chain'):
@@ -336,12 +369,29 @@ class UnaryOpTermHandler(SequenceHandler):
                 ('unaryOp',UnaryOpHandler()),
                 ('term',TermHandler())
             ]
-        return self._check_chain
+        return self._check_chain        
+    
+    def processXML(self, unstructured_xml):
+        try:
+            left_xml = SequenceHandler.processXML(self, unstructured_xml)
+            self.code_children = self.children
+            if self.children[0].getWord()=='-' and \
+                self.children[1].isNumber() and \
+                self.children[1].getNumber() == 32768:
+                self.code_children = [
+                    UnaryOpHandler(),ConstantHandler()
+                ]
+                self.code_children[0].processXML([('~','symbol')])
+                self.code_children[1].processXML([('32767','integerConstant')])
+        except Exception as e:
+            raise e
+        return left_xml
 
     def toCode(self):
+        print(self.code_children)
         result = ''
-        result += self.children[1].toCode()
-        result += self.children[0].toCode()
+        result += self.code_children[1].toCode()
+        result += self.code_children[0].toCode()
         return result
     
     # TODO: 现在对于负数的判断只支持最简单的 -12 这种
@@ -353,7 +403,10 @@ class UnaryOpTermHandler(SequenceHandler):
             return True
         else:
             return False
-    
+        
+    def isNumber(self):
+        return self.isNegative()
+
 class TermHandler(SelectHandler):
     isTerminal = True
     label = 'term'
@@ -373,31 +426,24 @@ class TermHandler(SelectHandler):
             }
         return self._candidates
     
-    def processXML(self, unstructured_xml):
-        try:
-            left_xml = SelectHandler.processXML(self, unstructured_xml)
-            self.checkConstantValue()
-            return left_xml
-        except Exception as e:
-            raise e
-
-    def checkConstantValue(self):
-        # 检查正数是否超过了32767
-        if isinstance(self.selected_candidate, ConstantHandler) and \
-            int(self.selected_candidate.getWord())>=32768:
-            raise ValueException('constant value too large, positive number should be less than 32768')
-        # 检查负数是否超过了-32768
-        elif isinstance(self.selected_candidate, UnaryOpTermHandler) and \
-            self.selected_candidate.isNegative():
-            if int(self.selected_candidate.children[1].selected_candidate.getWord())>32768:
-                raise ValueException('constant value too large, negative number should be less than -32768') 
-            if int(self.selected_candidate.children[1].selected_candidate.getWord())==32768:
-                tmp_unstructured_xml = [('~','symbol'),('32767','integerConstant')]
-                tmp_selected_candidate = UnaryOpHandler()
-                tmp_selected_candidate.processXML(tmp_unstructured_xml)
-                self.selected_candidate = tmp_selected_candidate
-
     def toCode(self):
         result = ''
         result = self.selected_candidate.toCode()
         return result
+
+    def isNumber(self):
+        if isinstance(self.selected_candidate,ConstantHandler) and \
+            self.selected_candidate.isNumber():
+            return True
+        elif isinstance(self.selected_candidate,TermExpressionHandler) and \
+            self.selected_candidate.isNumber():
+            return True
+        elif isinstance(self.selected_candidate,UnaryOpTermHandler) and \
+            self.selected_candidate.isNumber():
+            return True
+        return False
+    
+    def getNumber(self):
+        if not self.isNumber():
+            raise ExpressionException('try to get number from a none-pure-value term')
+        return int(self.selected_candidate.getNumber())

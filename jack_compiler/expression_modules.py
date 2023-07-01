@@ -73,7 +73,10 @@ class OpHandler(SimpleHandler):
         elif self.getWord() == '=':
             result = 'eq\n'
         return result
-    
+
+class ValueException(Exception):
+    pass
+
 class ConstantHandler(SimpleHandler):
     isTerminal = False
     label = 'constant'
@@ -334,12 +337,22 @@ class UnaryOpTermHandler(SequenceHandler):
                 ('term',TermHandler())
             ]
         return self._check_chain
-    
+
     def toCode(self):
         result = ''
         result += self.children[1].toCode()
         result += self.children[0].toCode()
         return result
+    
+    # TODO: 现在对于负数的判断只支持最简单的 -12 这种
+    #       并不支持 -(((12))) 这种符合的判断
+    def isNegative(self):
+        if self.children[0].getWord() == '-' and \
+            isinstance(self.children[1].selected_candidate, ConstantHandler) and \
+            self.children[1].selected_candidate.getWordType() == 'integerConstant':
+            return True
+        else:
+            return False
     
 class TermHandler(SelectHandler):
     isTerminal = True
@@ -360,6 +373,30 @@ class TermHandler(SelectHandler):
             }
         return self._candidates
     
+    def processXML(self, unstructured_xml):
+        try:
+            left_xml = SelectHandler.processXML(self, unstructured_xml)
+            self.checkConstantValue()
+            return left_xml
+        except Exception as e:
+            raise e
+
+    def checkConstantValue(self):
+        # 检查正数是否超过了32767
+        if isinstance(self.selected_candidate, ConstantHandler) and \
+            int(self.selected_candidate.getWord())>=32768:
+            raise ValueException('constant value too large, positive number should be less than 32768')
+        # 检查负数是否超过了-32768
+        elif isinstance(self.selected_candidate, UnaryOpTermHandler) and \
+            self.selected_candidate.isNegative():
+            if int(self.selected_candidate.children[1].selected_candidate.getWord())>32768:
+                raise ValueException('constant value too large, negative number should be less than -32768') 
+            if int(self.selected_candidate.children[1].selected_candidate.getWord())==32768:
+                tmp_unstructured_xml = [('~','symbol'),('32767','integerConstant')]
+                tmp_selected_candidate = UnaryOpHandler()
+                tmp_selected_candidate.processXML(tmp_unstructured_xml)
+                self.selected_candidate = tmp_selected_candidate
+
     def toCode(self):
         result = ''
         result = self.selected_candidate.toCode()

@@ -5,13 +5,13 @@ import os
 import argparse
 import translator_io 
 import translator_parser
-import memory_translator
+from translator import Translator
 
 from utilis import *
 
 def process_file(codes,file_name):
     sentense_parser = translator_parser.Parser()
-    translator = memory_translator.Translator(file_name)
+    translator = Translator(file_name)
 
     result_codes = ''
 
